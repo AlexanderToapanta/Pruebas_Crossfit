@@ -21,7 +21,7 @@ psql -U postgres -d ironcladbox -f database/schema.sql
 
 3. **Credenciales por defecto:**
    - Usuario PostgreSQL: `postgres`
-   - Contraseña: `postgres`
+   - Contraseña: `1234`
    - Host: `localhost`
    - Puerto: `5432`
 
@@ -29,14 +29,14 @@ psql -U postgres -d ironcladbox -f database/schema.sql
 
 ```bash
 cd src
-javac -encoding UTF-8 -d ../bin com/ironcladbox/**/*.java
+javac -encoding UTF-8 -cp "../lib/*" -d ../bin com/ironcladbox/model/*.java com/ironcladbox/dao/*.java com/ironcladbox/util/*.java com/ironcladbox/controller/*.java com/ironcladbox/view/*.java
 cd ..
 ```
 
 ## Ejecución
 
 ```bash
-java -cp bin com.ironcladbox.view.LoginView
+java -cp "bin:lib/*" com.ironcladbox.view.LoginView
 ```
 
 ## Usuarios de Prueba

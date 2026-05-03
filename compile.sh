@@ -8,14 +8,14 @@ mkdir -p bin
 
 # Compilar
 cd src
-javac -encoding UTF-8 -d ../bin com/ironcladbox/model/*.java
-javac -encoding UTF-8 -d ../bin -cp ../bin com/ironcladbox/dao/*.java
-javac -encoding UTF-8 -d ../bin -cp ../bin com/ironcladbox/util/*.java
-javac -encoding UTF-8 -d ../bin -cp ../bin com/ironcladbox/controller/*.java
-javac -encoding UTF-8 -d ../bin -cp ../bin com/ironcladbox/view/*.java
+javac -encoding UTF-8 -cp "../lib/*" -d ../bin com/ironcladbox/model/*.java
+javac -encoding UTF-8 -cp "../lib/*:../bin" -d ../bin com/ironcladbox/dao/*.java
+javac -encoding UTF-8 -cp "../lib/*:../bin" -d ../bin com/ironcladbox/util/*.java
+javac -encoding UTF-8 -cp "../lib/*:../bin" -d ../bin com/ironcladbox/controller/*.java
+javac -encoding UTF-8 -cp "../lib/*:../bin" -d ../bin com/ironcladbox/view/*.java
 cd ..
 
 echo "✓ Compilación completada"
 echo ""
 echo "Para ejecutar:"
-echo "java -cp bin com.ironcladbox.view.LoginView"
+echo "java -cp \"bin:lib/*\" com.ironcladbox.view.LoginView"
