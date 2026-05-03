@@ -1,6 +1,7 @@
 package com.ironcladbox.view;
 
 import com.ironcladbox.controller.AuthController;
+import com.ironcladbox.util.UIStyles;
 import com.ironcladbox.model.Rol;
 
 import javax.swing.*;
@@ -24,101 +25,135 @@ public class LoginView extends JFrame {
     private void initializeUI() {
         setTitle("IroncladBox CrossFit - Login");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(500, 400);
+        setSize(600, 680);
         setLocationRelativeTo(null);
         setResizable(false);
 
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new GridBagLayout());
-        mainPanel.setBackground(new Color(26, 26, 26));
+        mainPanel.setBackground(UIStyles.PRIMARY_DARK);
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(12, 30, 12, 30);
+        gbc.insets = new Insets(20, 30, 20, 30);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Header
-        JLabel titleLabel = new JLabel("IRONCLADBOX");
-        titleLabel.setFont(new Font("Bebas Neue", Font.BOLD, 36));
-        titleLabel.setForeground(new Color(230, 126, 34));
+        // Panel decorativo para el logo
+        JPanel logoPanelContainer = new JPanel();
+        logoPanelContainer.setLayout(new BoxLayout(logoPanelContainer, BoxLayout.Y_AXIS));
+        logoPanelContainer.setBackground(UIStyles.SECONDARY_DARK);
+        logoPanelContainer.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(UIStyles.BORDER_COLOR, 2),
+            BorderFactory.createEmptyBorder(20, 20, 20, 20)
+        ));
+
+        try {
+            ImageIcon icon = new ImageIcon(getClass().getResource("/com/ironcladbox/images/logo.jpeg"));
+            Image img = icon.getImage().getScaledInstance(120, 120, Image.SCALE_SMOOTH);
+            JLabel logoLabel = new JLabel(new ImageIcon(img));
+            logoLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            logoPanelContainer.add(logoLabel);
+        } catch (Exception e) {
+            // Si no encuentra la imagen, muestra placeholder
+            JLabel placeholderLabel = new JLabel("🏋️ LOGO");
+            placeholderLabel.setFont(new Font("Arial", Font.BOLD, 30));
+            placeholderLabel.setForeground(UIStyles.ACCENT_RED);
+            placeholderLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            logoPanelContainer.add(placeholderLabel);
+        }
+
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 2;
+        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.insets = new Insets(10, 30, 10, 30);
+        mainPanel.add(logoPanelContainer, gbc);
+        gbc.insets = new Insets(20, 30, 20, 30);
+
+        JLabel titleLabel = new JLabel("IRONCLADBOX");
+        titleLabel.setFont(UIStyles.FONT_TITLE);
+        titleLabel.setForeground(UIStyles.ACCENT_RED);
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.gridwidth = 2;
+        gbc.anchor = GridBagConstraints.CENTER;
         mainPanel.add(titleLabel, gbc);
+        gbc.anchor = GridBagConstraints.WEST;
 
         JLabel subtitleLabel = new JLabel("Inicia sesión en tu cuenta");
-        subtitleLabel.setFont(new Font("Montserrat", Font.PLAIN, 13));
-        subtitleLabel.setForeground(new Color(200, 200, 200));
-        gbc.gridy = 1;
+        subtitleLabel.setFont(UIStyles.FONT_LABEL);
+        subtitleLabel.setForeground(UIStyles.TEXT_SECONDARY);
+        gbc.gridy = 2;
+        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.insets = new Insets(5, 30, 20, 30);
         mainPanel.add(subtitleLabel, gbc);
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.insets = new Insets(20, 30, 20, 30);
 
         // Email
-        JLabel emailLabel = new JLabel("Email:");
-        emailLabel.setForeground(new Color(230, 126, 34));
-        emailLabel.setFont(new Font("Montserrat", Font.BOLD, 12));
+        JLabel emailLabel = new JLabel("📧 Email:");
+        UIStyles.styleLabel(emailLabel, true);
         gbc.gridwidth = 1;
-        gbc.gridy = 2;
+        gbc.gridy = 3;
         gbc.gridx = 0;
+        gbc.insets = new Insets(10, 30, 5, 30);
         mainPanel.add(emailLabel, gbc);
 
         emailField = new JTextField();
-        emailField.setFont(new Font("Montserrat", Font.PLAIN, 12));
-        emailField.setPreferredSize(new Dimension(400, 35));
-        emailField.setBackground(new Color(45, 45, 45));
-        emailField.setForeground(new Color(220, 220, 220));
-        emailField.setBorder(BorderFactory.createLineBorder(new Color(100, 100, 100)));
+        UIStyles.styleTextField(emailField);
+        emailField.setPreferredSize(new Dimension(300, 35));
         gbc.gridx = 0;
-        gbc.gridy = 3;
+        gbc.gridy = 4;
         gbc.gridwidth = 2;
+        gbc.insets = new Insets(5, 30, 15, 30);
         mainPanel.add(emailField, gbc);
 
         // Password
-        JLabel passwordLabel = new JLabel("Contraseña:");
-        passwordLabel.setForeground(new Color(230, 126, 34));
-        passwordLabel.setFont(new Font("Montserrat", Font.BOLD, 12));
+        JLabel passwordLabel = new JLabel("🔐 Contraseña:");
+        UIStyles.styleLabel(passwordLabel, true);
         gbc.gridx = 0;
-        gbc.gridy = 4;
+        gbc.gridy = 5;
         gbc.gridwidth = 1;
+        gbc.insets = new Insets(10, 30, 5, 30);
         mainPanel.add(passwordLabel, gbc);
 
         passwordField = new JPasswordField();
-        passwordField.setFont(new Font("Montserrat", Font.PLAIN, 12));
-        passwordField.setPreferredSize(new Dimension(400, 35));
-        passwordField.setBackground(new Color(45, 45, 45));
-        passwordField.setForeground(new Color(220, 220, 220));
-        passwordField.setBorder(BorderFactory.createLineBorder(new Color(100, 100, 100)));
+        passwordField.setBackground(UIStyles.SECONDARY_DARK);
+        passwordField.setForeground(UIStyles.TEXT_PRIMARY);
+        passwordField.setCaretColor(UIStyles.ACCENT_RED);
+        passwordField.setBorder(BorderFactory.createLineBorder(UIStyles.BORDER_COLOR, 2));
+        passwordField.setFont(UIStyles.FONT_LABEL);
+        passwordField.setPreferredSize(new Dimension(300, 35));
         gbc.gridx = 0;
-        gbc.gridy = 5;
+        gbc.gridy = 6;
         gbc.gridwidth = 2;
+        gbc.insets = new Insets(5, 30, 15, 30);
         mainPanel.add(passwordField, gbc);
 
         // Message Label
         messageLabel = new JLabel();
-        messageLabel.setForeground(new Color(220, 20, 60));
-        messageLabel.setFont(new Font("Montserrat", Font.PLAIN, 11));
-        gbc.gridy = 6;
+        messageLabel.setForeground(UIStyles.DANGER_RED);
+        messageLabel.setFont(UIStyles.FONT_SMALL);
+        gbc.gridy = 7;
+        gbc.insets = new Insets(5, 30, 15, 30);
         mainPanel.add(messageLabel, gbc);
 
         // Login Button
-        loginButton = new JButton("INICIAR SESIÓN");
-        loginButton.setFont(new Font("Montserrat", Font.BOLD, 13));
-        loginButton.setBackground(new Color(230, 126, 34));
-        loginButton.setForeground(Color.WHITE);
-        loginButton.setFocusPainted(false);
-        loginButton.setPreferredSize(new Dimension(400, 40));
-        loginButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        loginButton = new JButton("🔓 INICIAR SESIÓN");
+        UIStyles.stylePrimaryButton(loginButton);
+        loginButton.setPreferredSize(new Dimension(400, 50));
+        loginButton.setFont(new Font("Montserrat", Font.BOLD, 14));
         loginButton.addActionListener(new LoginActionListener());
-        gbc.gridy = 7;
+        gbc.gridy = 8;
+        gbc.insets = new Insets(10, 30, 10, 30);
         mainPanel.add(loginButton, gbc);
 
         // Register Button
         registerButton = new JButton("¿Sin cuenta? Regístrate aquí");
-        registerButton.setFont(new Font("Montserrat", Font.PLAIN, 11));
-        registerButton.setBackground(new Color(50, 50, 50));
-        registerButton.setForeground(new Color(230, 126, 34));
-        registerButton.setFocusPainted(false);
-        registerButton.setPreferredSize(new Dimension(400, 35));
-        registerButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        UIStyles.styleSecondaryButton(registerButton);
+        registerButton.setPreferredSize(new Dimension(400, 40));
+        registerButton.setFont(new Font("Montserrat", Font.PLAIN, 12));
         registerButton.addActionListener(e -> openRegisterView());
-        gbc.gridy = 8;
+        gbc.gridy = 9;
+        gbc.insets = new Insets(5, 30, 20, 30);
         mainPanel.add(registerButton, gbc);
 
         add(mainPanel);
@@ -136,7 +171,8 @@ public class LoginView extends JFrame {
                 return;
             }
 
-            if (authController.login(email, password)) {
+            boolean ok = authController.login(email, password);
+            if (ok) {
                 Rol rol = authController.getRolActual();
                 dispose();
                 openDashboard(rol);
@@ -148,11 +184,17 @@ public class LoginView extends JFrame {
     }
 
     private void openDashboard(Rol rol) {
+        if (rol == null) {
+            messageLabel.setText("Error: No se pudo determinar el rol del usuario");
+            return;
+        }
+        
         SwingUtilities.invokeLater(() -> {
             switch (rol) {
                 case ADMINISTRADOR -> new AdminDashboard();
                 case ENTRENADOR -> new EntrenadorDashboard();
                 case ATLETA -> new AtletaDashboard();
+                default -> messageLabel.setText("Error: Rol desconocido");
             }
         });
     }

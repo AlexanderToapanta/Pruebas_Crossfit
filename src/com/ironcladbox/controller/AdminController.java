@@ -57,12 +57,32 @@ public class AdminController {
         claseDAO.actualizar(clase);
     }
 
+    public void eliminarClase(int idClase) {
+        claseDAO.eliminar(idClase);
+    }
+
     public void desactivarUsuario(int idUsuario) {
         Usuario usuario = usuarioDAO.obtenerPorId(idUsuario);
         if (usuario != null) {
             usuario.setActivo(false);
             usuarioDAO.actualizar(usuario);
         }
+    }
+
+    public void actualizarAtleta(Atleta atleta) {
+        atletaDAO.actualizar(atleta);
+    }
+
+    public void eliminarAtleta(int idAtleta) {
+        atletaDAO.eliminar(idAtleta);
+    }
+
+    public void actualizarEntrenador(Entrenador entrenador) {
+        entrenadorDAO.actualizar(entrenador);
+    }
+
+    public void eliminarEntrenador(int idEntrenador) {
+        entrenadorDAO.eliminar(idEntrenador);
     }
 
     public int getTotalAtletas() {

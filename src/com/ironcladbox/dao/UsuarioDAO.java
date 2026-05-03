@@ -118,14 +118,17 @@ public class UsuarioDAO implements IUsuarioDAO {
     @Override
     public Usuario autenticar(String email, String contrasena) {
         Usuario usuario = obtenerPorEmail(email);
-        if (usuario != null && usuario.getContrasena().equals(contrasena) && usuario.isActivo()) {
-            return usuario;
+        if (usuario != null) {
+            if (usuario.getContrasena().equals(contrasena) && usuario.isActivo()) {
+                return usuario;
+            }
         }
         return null;
     }
 
     private Usuario mapResultSetToUsuario(ResultSet rs) throws SQLException {
         Usuario usuario = new Usuario();
+        int idRol = rs.getInt("id_rol");
         usuario.setIdUsuario(rs.getInt("id_usuario"));
         usuario.setEmail(rs.getString("email"));
         usuario.setContrasena(rs.getString("contrasena"));

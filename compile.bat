@@ -2,28 +2,33 @@
 echo Compilando IroncladBox CrossFit...
 echo ==================================
 
-if not exist bin mkdir bin
+REM Limpiar compilación anterior
+if exist bin rmdir /s /q bin
+mkdir bin
 
-cd src
-echo Compilando model...
-javac -encoding UTF-8 -d ..\bin com\ironcladbox\model\*.java
+REM Compilar todos los .java de una vez
+echo Compilando todas las clases...
+dir /s /B src\*.java > sources.txt
+javac -encoding UTF-8 -d bin -cp "lib\*" @sources.txt
+del sources.txt
 
-echo Compilando dao...
-javac -encoding UTF-8 -d ..\bin -cp ..\bin com\ironcladbox\dao\*.java
+if %errorlevel% neq 0 (
+    echo ERROR en compilacion
+    pause
+    exit /b 1
+)
 
-echo Compilando util...
-javac -encoding UTF-8 -d ..\bin -cp ..\bin com\ironcladbox\util\*.java
-
-echo Compilando controller...
-javac -encoding UTF-8 -d ..\bin -cp ..\bin com\ironcladbox\controller\*.java
-
-echo Compilando view...
-javac -encoding UTF-8 -d ..\bin -cp ..\bin com\ironcladbox\view\*.java
-
-cd ..
+REM Copiar recursos (imágenes)
+echo Copiando imagenes y recursos...
+xcopy /Y /I src\com\ironcladbox\images\* bin\com\ironcladbox\images\
+if exist resources xcopy /Y /E resources\* bin\
 
 echo.
-echo Compilacion completada!
+echo ==================================
+echo Compilacion exitosa!
+echo ==================================
 echo.
 echo Para ejecutar:
-echo java -cp bin com.ironcladbox.view.LoginView
+echo java -cp "bin;lib\*" com.ironcladbox.view.LoginView
+echo.
+pause

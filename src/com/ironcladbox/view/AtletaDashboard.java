@@ -2,6 +2,7 @@ package com.ironcladbox.view;
 
 import com.ironcladbox.controller.AuthController;
 import com.ironcladbox.controller.AtletaController;
+import com.ironcladbox.util.UIStyles;
 import com.ironcladbox.model.Usuario;
 import com.ironcladbox.model.Clase;
 import com.ironcladbox.model.Suscripcion;
@@ -15,7 +16,6 @@ public class AtletaDashboard extends JFrame {
     private Usuario usuarioActual;
     private AuthController authController;
     private AtletaController atletaController;
-    private JTable clasesTable;
     private JLabel suscripcionLabel;
     private JLabel imcLabel;
 
@@ -29,46 +29,33 @@ public class AtletaDashboard extends JFrame {
     private void initializeUI() {
         setTitle("IroncladBox CrossFit - Dashboard Atleta");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(900, 650);
+        setSize(1000, 700);
         setLocationRelativeTo(null);
 
         JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.setBackground(new Color(26, 26, 26));
+        mainPanel.setBackground(UIStyles.PRIMARY_DARK);
 
         // Header
-        JPanel headerPanel = new JPanel(new BorderLayout());
-        headerPanel.setBackground(new Color(40, 40, 40));
-
-        JLabel titleLabel = new JLabel("IRONCLADBOX - " + usuarioActual.getNombreCompleto());
-        titleLabel.setFont(new Font("Bebas Neue", Font.BOLD, 24));
-        titleLabel.setForeground(new Color(230, 126, 34));
-        titleLabel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
-        headerPanel.add(titleLabel, BorderLayout.WEST);
-
-        JButton logoutButton = new JButton("Cerrar Sesión");
-        logoutButton.setFont(new Font("Montserrat", Font.BOLD, 11));
-        logoutButton.setBackground(new Color(220, 20, 60));
-        logoutButton.setForeground(Color.WHITE);
-        logoutButton.setFocusPainted(false);
+        JButton logoutButton = new JButton("🚪 Cerrar Sesión");
+        UIStyles.styleDangerButton(logoutButton);
         logoutButton.addActionListener(e -> logout());
-        logoutButton.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-        headerPanel.add(logoutButton, BorderLayout.EAST);
-
+        
+        JPanel headerPanel = UIStyles.createHeaderPanel("💪 ATLETA - " + usuarioActual.getNombreCompleto(), logoutButton);
         mainPanel.add(headerPanel, BorderLayout.NORTH);
 
         // Content Panel
         JTabbedPane tabbedPane = new JTabbedPane();
-        tabbedPane.setBackground(new Color(26, 26, 26));
-        tabbedPane.setForeground(new Color(230, 126, 34));
+        tabbedPane.setBackground(UIStyles.PRIMARY_DARK);
+        tabbedPane.setForeground(UIStyles.ACCENT_RED);
 
         // Tab 1: Información personal
-        tabbedPane.addTab("Mi Perfil", createProfileTab());
+        tabbedPane.addTab("👤 Mi Perfil", createProfileTab());
 
         // Tab 2: Clases disponibles
-        tabbedPane.addTab("Clases Disponibles", createClasesTab());
+        tabbedPane.addTab("📚 Clases Disponibles", createClasesTab());
 
         // Tab 3: Mi suscripción
-        tabbedPane.addTab("Mi Suscripción", createSuscripcionTab());
+        tabbedPane.addTab("💳 Mi Suscripción", createSuscripcionTab());
 
         mainPanel.add(tabbedPane, BorderLayout.CENTER);
 
@@ -78,26 +65,24 @@ public class AtletaDashboard extends JFrame {
 
     private JPanel createProfileTab() {
         JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(new Color(26, 26, 26));
+        panel.setBackground(UIStyles.PRIMARY_DARK);
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.insets = new Insets(15, 20, 15, 20);
         gbc.anchor = GridBagConstraints.WEST;
 
-        addInfoRow(panel, "Nombre:", usuarioActual.getNombre(), 0, gbc);
-        addInfoRow(panel, "Apellido:", usuarioActual.getApellido(), 1, gbc);
-        addInfoRow(panel, "Email:", usuarioActual.getEmail(), 2, gbc);
-        addInfoRow(panel, "Teléfono:", usuarioActual.getTelefono(), 3, gbc);
+        addInfoRow(panel, "👤 Nombre:", usuarioActual.getNombre(), 0, gbc);
+        addInfoRow(panel, "👤 Apellido:", usuarioActual.getApellido(), 1, gbc);
+        addInfoRow(panel, "📧 Email:", usuarioActual.getEmail(), 2, gbc);
+        addInfoRow(panel, "📱 Teléfono:", usuarioActual.getTelefono() != null ? usuarioActual.getTelefono() : "N/A", 3, gbc);
 
         imcLabel = new JLabel("IMC: Calculando...");
-        imcLabel.setForeground(new Color(200, 200, 200));
-        imcLabel.setFont(new Font("Montserrat", Font.PLAIN, 12));
+        imcLabel.setForeground(UIStyles.ACCENT_RED);
+        imcLabel.setFont(UIStyles.FONT_LABEL);
         gbc.gridy = 4;
         panel.add(imcLabel, gbc);
 
-        JButton updateButton = new JButton("Actualizar Perfil");
-        updateButton.setBackground(new Color(230, 126, 34));
-        updateButton.setForeground(Color.WHITE);
-        updateButton.setFocusPainted(false);
+        JButton updateButton = new JButton("✏️ Actualizar Perfil");
+        UIStyles.stylePrimaryButton(updateButton);
         gbc.gridy = 5;
         panel.add(updateButton, gbc);
 
@@ -106,11 +91,16 @@ public class AtletaDashboard extends JFrame {
 
     private JPanel createClasesTab() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(new Color(26, 26, 26));
+        panel.setBackground(UIStyles.PRIMARY_DARK);
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         String[] columnas = {"ID", "Nombre", "Entrenador", "Día", "Horario", "Capacidad"};
-        DefaultTableModel modelo = new DefaultTableModel(columnas, 0);
+        DefaultTableModel modelo = new DefaultTableModel(columnas, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
 
         List<Clase> clases = atletaController.obtenerClasesDisponibles();
         for (Clase clase : clases) {
@@ -124,23 +114,20 @@ public class AtletaDashboard extends JFrame {
             });
         }
 
-        clasesTable = new JTable(modelo);
-        clasesTable.setBackground(new Color(40, 40, 40));
-        clasesTable.setForeground(new Color(200, 200, 200));
-        clasesTable.setGridColor(new Color(60, 60, 60));
+        JTable clasesTable = new JTable(modelo);
+        UIStyles.styleTable(clasesTable);
+        
         JScrollPane scrollPane = new JScrollPane(clasesTable);
-        scrollPane.setBackground(new Color(26, 26, 26));
-
+        scrollPane.setBackground(UIStyles.SECONDARY_DARK);
+        scrollPane.getViewport().setBackground(UIStyles.SECONDARY_DARK);
         panel.add(scrollPane, BorderLayout.CENTER);
 
-        JButton registerButton = new JButton("Registrarse a Clase");
-        registerButton.setBackground(new Color(230, 126, 34));
-        registerButton.setForeground(Color.WHITE);
-        registerButton.setFocusPainted(false);
+        JButton registerButton = new JButton("🎯 Registrarse a Clase");
+        UIStyles.stylePrimaryButton(registerButton);
         registerButton.addActionListener(e -> JOptionPane.showMessageDialog(this, "Función en desarrollo"));
 
         JPanel bottomPanel = new JPanel();
-        bottomPanel.setBackground(new Color(26, 26, 26));
+        bottomPanel.setBackground(UIStyles.PRIMARY_DARK);
         bottomPanel.add(registerButton);
         panel.add(bottomPanel, BorderLayout.SOUTH);
 
@@ -149,31 +136,32 @@ public class AtletaDashboard extends JFrame {
 
     private JPanel createSuscripcionTab() {
         JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(new Color(26, 26, 26));
+        panel.setBackground(UIStyles.PRIMARY_DARK);
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.insets = new Insets(15, 20, 15, 20);
         gbc.anchor = GridBagConstraints.WEST;
 
         Suscripcion suscripcion = atletaController.obtenerSuscripcionActiva(usuarioActual.getIdUsuario());
 
         if (suscripcion != null) {
-            addInfoRow(panel, "Membresía:", suscripcion.getNombreMembresia(), 0, gbc);
-            addInfoRow(panel, "Precio:", "$" + suscripcion.getPrecioMembresia(), 1, gbc);
-            addInfoRow(panel, "Inicio:", suscripcion.getFechaInicio().toString(), 2, gbc);
-            addInfoRow(panel, "Vencimiento:", suscripcion.getFechaFin().toString(), 3, gbc);
-            addInfoRow(panel, "Estado:", suscripcion.isVigente() ? "✓ Vigente" : "✗ Vencida", 4, gbc);
+            addInfoRow(panel, "💳 Membresía:", suscripcion.getNombreMembresia(), 0, gbc);
+            addInfoRow(panel, "💰 Precio:", "$" + suscripcion.getPrecioMembresia(), 1, gbc);
+            addInfoRow(panel, "📅 Inicio:", suscripcion.getFechaInicio().toString(), 2, gbc);
+            addInfoRow(panel, "📅 Vencimiento:", suscripcion.getFechaFin().toString(), 3, gbc);
+            
+            String estado = suscripcion.isVigente() ? "✓ Vigente" : "✗ Vencida";
+            Color estadoColor = suscripcion.isVigente() ? UIStyles.SUCCESS_GREEN : UIStyles.DANGER_RED;
+            addInfoRowWithColor(panel, "Estado:", estado, estadoColor, 4, gbc);
         } else {
-            suscripcionLabel = new JLabel("No tienes suscripción activa");
-            suscripcionLabel.setForeground(new Color(220, 20, 60));
-            suscripcionLabel.setFont(new Font("Montserrat", Font.BOLD, 14));
+            suscripcionLabel = new JLabel("❌ No tienes suscripción activa");
+            suscripcionLabel.setForeground(UIStyles.DANGER_RED);
+            suscripcionLabel.setFont(UIStyles.FONT_SUBTITLE);
             gbc.gridy = 0;
             panel.add(suscripcionLabel, gbc);
         }
 
-        JButton renewButton = new JButton("Renovar o Cambiar Membresía");
-        renewButton.setBackground(new Color(230, 126, 34));
-        renewButton.setForeground(Color.WHITE);
-        renewButton.setFocusPainted(false);
+        JButton renewButton = new JButton("🔄 Renovar o Cambiar Membresía");
+        UIStyles.styleSuccessButton(renewButton);
         gbc.gridy = 5;
         panel.add(renewButton, gbc);
 
@@ -182,22 +170,43 @@ public class AtletaDashboard extends JFrame {
 
     private void addInfoRow(JPanel panel, String label, String value, int row, GridBagConstraints gbc) {
         JLabel labelComp = new JLabel(label);
-        labelComp.setForeground(new Color(230, 126, 34));
-        labelComp.setFont(new Font("Montserrat", Font.BOLD, 12));
+        UIStyles.styleLabel(labelComp, true);
         gbc.gridx = 0;
         gbc.gridy = row;
         panel.add(labelComp, gbc);
 
         JLabel valueComp = new JLabel(value);
-        valueComp.setForeground(new Color(200, 200, 200));
-        valueComp.setFont(new Font("Montserrat", Font.PLAIN, 12));
+        valueComp.setForeground(UIStyles.TEXT_PRIMARY);
+        valueComp.setFont(UIStyles.FONT_LABEL);
+        gbc.gridx = 1;
+        panel.add(valueComp, gbc);
+    }
+    
+    private void addInfoRowWithColor(JPanel panel, String label, String value, Color valueColor, int row, GridBagConstraints gbc) {
+        JLabel labelComp = new JLabel(label);
+        UIStyles.styleLabel(labelComp, true);
+        gbc.gridx = 0;
+        gbc.gridy = row;
+        panel.add(labelComp, gbc);
+
+        JLabel valueComp = new JLabel(value);
+        valueComp.setForeground(valueColor);
+        valueComp.setFont(UIStyles.FONT_LABEL);
         gbc.gridx = 1;
         panel.add(valueComp, gbc);
     }
 
     private void logout() {
-        authController.logout();
-        dispose();
-        new LoginView();
+        int confirm = JOptionPane.showConfirmDialog(this, 
+            "¿Confirmas que deseas cerrar sesión?", 
+            "Cerrar Sesión",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE);
+        
+        if (confirm == JOptionPane.YES_OPTION) {
+            authController.logout();
+            dispose();
+            new LoginView();
+        }
     }
 }
