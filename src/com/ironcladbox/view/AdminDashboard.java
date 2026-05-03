@@ -7,6 +7,8 @@ import com.ironcladbox.model.Usuario;
 import com.ironcladbox.model.Atleta;
 import com.ironcladbox.model.Entrenador;
 import com.ironcladbox.model.Clase;
+import com.ironcladbox.model.Suscripcion;
+import com.ironcladbox.model.Membresia;
 
 import javax.swing.*;
 import javax.swing.AbstractCellEditor;
@@ -15,6 +17,7 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableCellEditor;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -38,11 +41,11 @@ public class AdminDashboard extends JFrame {
             this.renderPanel = createPanel(false);
             this.editorPanel = createPanel(true);
 
-            renderPanel.add(createButton("✏️", UIStyles.ACCENT_RED, false));
-            renderPanel.add(createButton("🗑️", UIStyles.DANGER_RED, false));
+            renderPanel.add(createButton("✏️ Editar", new Color(70, 130, 180), false));
+            renderPanel.add(createButton("🗑️ Eliminar", UIStyles.DANGER_RED, false));
 
-            JButton editButton = createButton("✏️", UIStyles.ACCENT_RED, true);
-            JButton deleteButton = createButton("🗑️", UIStyles.DANGER_RED, true);
+            JButton editButton = createButton("✏️ Editar", new Color(70, 130, 180), true);
+            JButton deleteButton = createButton("🗑️ Eliminar", UIStyles.DANGER_RED, true);
 
             editButton.addActionListener(e -> {
                 stopCellEditing();
@@ -53,12 +56,16 @@ public class AdminDashboard extends JFrame {
                 stopCellEditing();
                 deleteAction.execute(table.convertRowIndexToModel(currentRow));
             });
+
+            addHoverEffect(editButton);
+            addHoverEffect(deleteButton);
+
             editorPanel.add(editButton);
             editorPanel.add(deleteButton);
         }
 
         private JPanel createPanel(boolean editing) {
-            JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
+            JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 5));
             panel.setOpaque(true);
             panel.setBackground(editing ? UIStyles.SECONDARY_DARK : UIStyles.PRIMARY_DARK);
             return panel;
@@ -66,14 +73,38 @@ public class AdminDashboard extends JFrame {
 
         private JButton createButton(String text, Color background, boolean enabled) {
             JButton button = new JButton(text);
-            button.setFont(new Font("Arial", Font.PLAIN, 12));
+            button.setFont(new Font("Arial", Font.BOLD, 11));
             button.setBackground(background);
             button.setForeground(Color.WHITE);
-            button.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+            button.setBorder(BorderFactory.createRaisedBevelBorder());
             button.setFocusPainted(false);
             button.setEnabled(enabled);
             button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            button.setPreferredSize(new Dimension(110, 32));
             return button;
+        }
+
+        private void addHoverEffect(JButton button) {
+            Color originalBg = button.getBackground();
+            button.addMouseListener(new java.awt.event.MouseAdapter() {
+                @Override
+                public void mouseEntered(java.awt.event.MouseEvent evt) {
+                    if (button.isEnabled()) {
+                        button.setBackground(new Color(
+                            Math.min(originalBg.getRed() + 40, 255),
+                            Math.min(originalBg.getGreen() + 40, 255),
+                            Math.min(originalBg.getBlue() + 40, 255)
+                        ));
+                        button.setFont(new Font("Arial", Font.BOLD, 12));
+                    }
+                }
+
+                @Override
+                public void mouseExited(java.awt.event.MouseEvent evt) {
+                    button.setBackground(originalBg);
+                    button.setFont(new Font("Arial", Font.BOLD, 11));
+                }
+            });
         }
 
         @Override
@@ -185,6 +216,8 @@ public class AdminDashboard extends JFrame {
         tabbedPane.addTab("👥 Atletas", createAtletasTab());
         tabbedPane.addTab("🏋️ Entrenadores", createEntrenoresTab());
         tabbedPane.addTab("📚 Clases", createClassesTab());
+        tabbedPane.addTab("💳 Suscripciones", createSuscripcionesTab());
+        tabbedPane.addTab("📋 Membresías", createMembresiaTab());
 
         mainPanel.add(tabbedPane, BorderLayout.CENTER);
 
@@ -193,7 +226,7 @@ public class AdminDashboard extends JFrame {
     }
 
     private JPanel createStatsPanel() {
-        JPanel panel = new JPanel(new GridLayout(1, 3, 20, 0));
+        JPanel panel = new JPanel(new GridLayout(1, 5, 15, 0));
         panel.setBackground(UIStyles.SECONDARY_DARK);
         panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
@@ -213,6 +246,18 @@ public class AdminDashboard extends JFrame {
             "Clases disponibles",
             String.valueOf(adminController.getTotalClases()),
             UIStyles.ACCENT_RED
+        ));
+
+        panel.add(UIStyles.createStatPanel(
+            "Suscripciones activas",
+            String.valueOf(adminController.getTotalSuscripciones()),
+            UIStyles.ACCENT_RED
+        ));
+
+        panel.add(UIStyles.createStatPanel(
+            "Membresías activas",
+            String.valueOf(adminController.getTotalMembresias()),
+            UIStyles.SUCCESS_GREEN
         ));
 
         return panel;
@@ -897,6 +942,288 @@ public class AdminDashboard extends JFrame {
         }
     }
 
+    private JPanel createMembresiaTab() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(UIStyles.PRIMARY_DARK);
+
+        List<Membresia> membresias = adminController.obtenerMembresias().stream()
+                .filter(Membresia::isActiva)
+                .toList();
+
+        String[] columnas = {"ID", "Nombre", "Precio ($)", "Duración (días)", "Beneficios", "Acciones"};
+        Object[][] datos = new Object[membresias.size()][6];
+
+        int i = 0;
+        for (Membresia m : membresias) {
+            datos[i][0] = m.getIdMembresia();
+            datos[i][1] = m.getNombre();
+            datos[i][2] = String.format("$%.2f", m.getPrecio());
+            datos[i][3] = m.getDuracionDias();
+            datos[i][4] = m.getBeneficios() != null ? m.getBeneficios().substring(0, Math.min(30, m.getBeneficios().length())) + "..." : "Sin beneficios";
+            datos[i][5] = "ACCIONES";
+            i++;
+        }
+
+        DefaultTableModel modelo = new DefaultTableModel(datos, columnas) {
+            public boolean isCellEditable(int r, int c) { return c == 5; }
+        };
+
+        JTable table = new JTable(modelo);
+        UIStyles.styleTable(table);
+        table.setRowHeight(35);
+        ActionColumn actionColumn = new ActionColumn(table, this::editarMembresia, this::eliminarMembresia);
+        table.getColumn("Acciones").setCellRenderer(actionColumn);
+        table.getColumn("Acciones").setCellEditor(actionColumn);
+
+        JScrollPane scroll = new JScrollPane(table);
+        scroll.getViewport().setBackground(UIStyles.PRIMARY_DARK);
+
+        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+        topPanel.setBackground(UIStyles.SECONDARY_DARK);
+
+        JButton btnNuevaMembresia = new JButton("➕ Nueva Membresía");
+        UIStyles.styleSuccessButton(btnNuevaMembresia);
+        btnNuevaMembresia.addActionListener(e -> crearNuevaMembresia());
+        topPanel.add(btnNuevaMembresia);
+
+        panel.add(topPanel, BorderLayout.NORTH);
+        panel.add(scroll, BorderLayout.CENTER);
+        return panel;
+    }
+
+    private void crearNuevaMembresia() {
+        JDialog dialog = new JDialog(this, "Nueva Membresía", true);
+        dialog.setSize(500, 550);
+        dialog.setLocationRelativeTo(this);
+        dialog.getContentPane().setBackground(UIStyles.PRIMARY_DARK);
+
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        formPanel.setBackground(UIStyles.PRIMARY_DARK);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+
+        JLabel lblNombre = new JLabel("Nombre:");
+        lblNombre.setForeground(UIStyles.ACCENT_RED);
+        JTextField txtNombre = new JTextField();
+        UIStyles.styleTextField(txtNombre);
+
+        JLabel lblDescripcion = new JLabel("Descripción:");
+        lblDescripcion.setForeground(UIStyles.ACCENT_RED);
+        JTextArea txtDescripcion = new JTextArea(3, 20);
+        txtDescripcion.setLineWrap(true);
+        txtDescripcion.setBackground(UIStyles.SECONDARY_DARK);
+        txtDescripcion.setForeground(Color.WHITE);
+        txtDescripcion.setFont(new Font("Arial", Font.PLAIN, 11));
+
+        JLabel lblPrecio = new JLabel("Precio ($):");
+        lblPrecio.setForeground(UIStyles.ACCENT_RED);
+        JSpinner spinPrecio = new JSpinner(new javax.swing.SpinnerNumberModel(29.99, 0, 10000, 0.01));
+
+        JLabel lblDuracion = new JLabel("Duración (días):");
+        lblDuracion.setForeground(UIStyles.ACCENT_RED);
+        JSpinner spinDuracion = new JSpinner(new javax.swing.SpinnerNumberModel(30, 1, 730, 1));
+
+        JLabel lblBeneficios = new JLabel("Beneficios:");
+        lblBeneficios.setForeground(UIStyles.ACCENT_RED);
+        JTextArea txtBeneficios = new JTextArea(3, 20);
+        txtBeneficios.setLineWrap(true);
+        txtBeneficios.setBackground(UIStyles.SECONDARY_DARK);
+        txtBeneficios.setForeground(Color.WHITE);
+        txtBeneficios.setFont(new Font("Arial", Font.PLAIN, 11));
+
+        int y = 0;
+        gbc.gridx = 0; gbc.gridy = y++; formPanel.add(lblNombre, gbc);
+        gbc.gridx = 1; formPanel.add(txtNombre, gbc);
+        gbc.gridx = 0; gbc.gridy = y++; formPanel.add(lblDescripcion, gbc);
+        gbc.gridx = 1; formPanel.add(new JScrollPane(txtDescripcion), gbc);
+        gbc.gridx = 0; gbc.gridy = y++; formPanel.add(lblPrecio, gbc);
+        gbc.gridx = 1; formPanel.add(spinPrecio, gbc);
+        gbc.gridx = 0; gbc.gridy = y++; formPanel.add(lblDuracion, gbc);
+        gbc.gridx = 1; formPanel.add(spinDuracion, gbc);
+        gbc.gridx = 0; gbc.gridy = y++; formPanel.add(lblBeneficios, gbc);
+        gbc.gridx = 1; formPanel.add(new JScrollPane(txtBeneficios), gbc);
+
+        JScrollPane scrollForm = new JScrollPane(formPanel);
+        scrollForm.getViewport().setBackground(UIStyles.PRIMARY_DARK);
+        dialog.add(scrollForm, BorderLayout.CENTER);
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
+        buttonPanel.setBackground(UIStyles.SECONDARY_DARK);
+
+        JButton btnGuardar = new JButton("✓ Crear");
+        UIStyles.styleSuccessButton(btnGuardar);
+        btnGuardar.addActionListener(e -> {
+            if (txtNombre.getText().trim().isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "El nombre es requerido", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            Double precio = (Double) spinPrecio.getValue();
+            Integer duracion = (Integer) spinDuracion.getValue();
+
+            if (precio <= 0) {
+                JOptionPane.showMessageDialog(dialog, "El precio debe ser mayor a 0", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            Membresia membresia = new Membresia(
+                    txtNombre.getText().trim(),
+                    txtDescripcion.getText().trim(),
+                    precio,
+                    duracion,
+                    txtBeneficios.getText().trim()
+            );
+
+            adminController.crearMembresia(membresia);
+            JOptionPane.showMessageDialog(dialog, "Membresía creada exitosamente", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+            dialog.dispose();
+            dispose();
+            new AdminDashboard();
+        });
+
+        JButton btnCancelar = new JButton("✗ Cancelar");
+        UIStyles.styleDangerButton(btnCancelar);
+        btnCancelar.addActionListener(e -> dialog.dispose());
+
+        buttonPanel.add(btnGuardar);
+        buttonPanel.add(btnCancelar);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+
+        dialog.setVisible(true);
+    }
+
+    private void editarMembresia(int row) {
+        List<Membresia> membresias = adminController.obtenerMembresias().stream()
+                .filter(Membresia::isActiva)
+                .toList();
+        if (row >= membresias.size()) return;
+
+        Membresia membresia = membresias.get(row);
+
+        JDialog dialog = new JDialog(this, "Editar Membresía: " + membresia.getNombre(), true);
+        dialog.setSize(500, 550);
+        dialog.setLocationRelativeTo(this);
+        dialog.getContentPane().setBackground(UIStyles.PRIMARY_DARK);
+
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        formPanel.setBackground(UIStyles.PRIMARY_DARK);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+
+        JLabel lblNombre = new JLabel("Nombre:");
+        lblNombre.setForeground(UIStyles.ACCENT_RED);
+        JTextField txtNombre = new JTextField(membresia.getNombre());
+        UIStyles.styleTextField(txtNombre);
+
+        JLabel lblDescripcion = new JLabel("Descripción:");
+        lblDescripcion.setForeground(UIStyles.ACCENT_RED);
+        JTextArea txtDescripcion = new JTextArea(membresia.getDescripcion() != null ? membresia.getDescripcion() : "", 3, 20);
+        txtDescripcion.setLineWrap(true);
+        txtDescripcion.setBackground(UIStyles.SECONDARY_DARK);
+        txtDescripcion.setForeground(Color.WHITE);
+        txtDescripcion.setFont(new Font("Arial", Font.PLAIN, 11));
+
+        JLabel lblPrecio = new JLabel("Precio ($):");
+        lblPrecio.setForeground(UIStyles.ACCENT_RED);
+        JSpinner spinPrecio = new JSpinner(new javax.swing.SpinnerNumberModel(membresia.getPrecio(), 0, 10000, 0.01));
+
+        JLabel lblDuracion = new JLabel("Duración (días):");
+        lblDuracion.setForeground(UIStyles.ACCENT_RED);
+        JSpinner spinDuracion = new JSpinner(new javax.swing.SpinnerNumberModel(membresia.getDuracionDias(), 1, 730, 1));
+
+        JLabel lblBeneficios = new JLabel("Beneficios:");
+        lblBeneficios.setForeground(UIStyles.ACCENT_RED);
+        JTextArea txtBeneficios = new JTextArea(membresia.getBeneficios() != null ? membresia.getBeneficios() : "", 3, 20);
+        txtBeneficios.setLineWrap(true);
+        txtBeneficios.setBackground(UIStyles.SECONDARY_DARK);
+        txtBeneficios.setForeground(Color.WHITE);
+        txtBeneficios.setFont(new Font("Arial", Font.PLAIN, 11));
+
+        int y = 0;
+        gbc.gridx = 0; gbc.gridy = y++; formPanel.add(lblNombre, gbc);
+        gbc.gridx = 1; formPanel.add(txtNombre, gbc);
+        gbc.gridx = 0; gbc.gridy = y++; formPanel.add(lblDescripcion, gbc);
+        gbc.gridx = 1; formPanel.add(new JScrollPane(txtDescripcion), gbc);
+        gbc.gridx = 0; gbc.gridy = y++; formPanel.add(lblPrecio, gbc);
+        gbc.gridx = 1; formPanel.add(spinPrecio, gbc);
+        gbc.gridx = 0; gbc.gridy = y++; formPanel.add(lblDuracion, gbc);
+        gbc.gridx = 1; formPanel.add(spinDuracion, gbc);
+        gbc.gridx = 0; gbc.gridy = y++; formPanel.add(lblBeneficios, gbc);
+        gbc.gridx = 1; formPanel.add(new JScrollPane(txtBeneficios), gbc);
+
+        JScrollPane scrollForm = new JScrollPane(formPanel);
+        scrollForm.getViewport().setBackground(UIStyles.PRIMARY_DARK);
+        dialog.add(scrollForm, BorderLayout.CENTER);
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
+        buttonPanel.setBackground(UIStyles.SECONDARY_DARK);
+
+        JButton btnGuardar = new JButton("✓ Guardar");
+        UIStyles.styleSuccessButton(btnGuardar);
+        btnGuardar.addActionListener(e -> {
+            if (txtNombre.getText().trim().isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "El nombre es requerido", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            Double precio = (Double) spinPrecio.getValue();
+            Integer duracion = (Integer) spinDuracion.getValue();
+
+            if (precio <= 0) {
+                JOptionPane.showMessageDialog(dialog, "El precio debe ser mayor a 0", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            membresia.setNombre(txtNombre.getText().trim());
+            membresia.setDescripcion(txtDescripcion.getText().trim());
+            membresia.setPrecio(precio);
+            membresia.setDuracionDias(duracion);
+            membresia.setBeneficios(txtBeneficios.getText().trim());
+
+            adminController.actualizarMembresia(membresia);
+            JOptionPane.showMessageDialog(dialog, "Membresía actualizada exitosamente", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+            dialog.dispose();
+            dispose();
+            new AdminDashboard();
+        });
+
+        JButton btnCancelar = new JButton("✗ Cancelar");
+        UIStyles.styleDangerButton(btnCancelar);
+        btnCancelar.addActionListener(e -> dialog.dispose());
+
+        buttonPanel.add(btnGuardar);
+        buttonPanel.add(btnCancelar);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+
+        dialog.setVisible(true);
+    }
+
+    private void eliminarMembresia(int row) {
+        List<Membresia> membresias = adminController.obtenerMembresias().stream()
+                .filter(Membresia::isActiva)
+                .toList();
+        if (row >= membresias.size()) return;
+
+        Membresia membresia = membresias.get(row);
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "¿Desactivar membresía \"" + membresia.getNombre() + "\"?",
+                "Confirmar desactivación",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE);
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            membresia.setActiva(false);
+            adminController.actualizarMembresia(membresia);
+            JOptionPane.showMessageDialog(this, "Membresía desactivada exitosamente");
+            dispose();
+            new AdminDashboard();
+        }
+    }
+
     private void logout() {
         int confirm = JOptionPane.showConfirmDialog(this,
                 "¿Confirmas que deseas cerrar sesión?",
@@ -907,6 +1234,274 @@ public class AdminDashboard extends JFrame {
             authController.logout();
             dispose();
             new LoginView();
+        }
+    }
+
+    private JPanel createSuscripcionesTab() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(UIStyles.PRIMARY_DARK);
+
+        String[] columnas = {"Atleta", "Membresía", "Precio ($)", "Fecha Inicio", "Fecha Fin", "Acciones"};
+        List<Suscripcion> suscripciones = adminController.obtenerTodasLasSuscripciones();
+        Object[][] datos = new Object[suscripciones.size()][6];
+
+        int i = 0;
+        for (Suscripcion s : suscripciones) {
+            Atleta atleta = adminController.obtenerTodosAtletas().stream()
+                    .filter(a -> a.getIdAtleta() == s.getIdAtleta())
+                    .findFirst()
+                    .orElse(null);
+
+            datos[i][0] = atleta != null ? atleta.getNombreCompleto() : "Desconocido";
+            datos[i][1] = s.getNombreMembresia();
+            datos[i][2] = String.format("$%.2f", s.getPrecioMembresia());
+            datos[i][3] = s.getFechaInicio();
+            datos[i][4] = s.getFechaFin();
+            datos[i][5] = "ACCIONES";
+            i++;
+        }
+
+        DefaultTableModel modelo = new DefaultTableModel(datos, columnas) {
+            public boolean isCellEditable(int r, int c) { return c == 5; }
+        };
+
+        JTable table = new JTable(modelo);
+        UIStyles.styleTable(table);
+        table.setRowHeight(35);
+        ActionColumn actionColumn = new ActionColumn(table, this::editarSuscripcion, this::revocarSuscripcion);
+        table.getColumn("Acciones").setCellRenderer(actionColumn);
+        table.getColumn("Acciones").setCellEditor(actionColumn);
+
+        JScrollPane scroll = new JScrollPane(table);
+        scroll.getViewport().setBackground(UIStyles.PRIMARY_DARK);
+
+        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+        topPanel.setBackground(UIStyles.SECONDARY_DARK);
+
+        JButton btnNuevaSuscripcion = new JButton("➕ Nueva Suscripción");
+        UIStyles.styleSuccessButton(btnNuevaSuscripcion);
+        btnNuevaSuscripcion.addActionListener(e -> crearNuevaSuscripcion());
+        topPanel.add(btnNuevaSuscripcion);
+
+        panel.add(topPanel, BorderLayout.NORTH);
+        panel.add(scroll, BorderLayout.CENTER);
+        return panel;
+    }
+
+    private void crearNuevaSuscripcion() {
+        JDialog dialog = new JDialog(this, "Nueva Suscripción", true);
+        dialog.setSize(500, 400);
+        dialog.setLocationRelativeTo(this);
+        dialog.getContentPane().setBackground(UIStyles.PRIMARY_DARK);
+
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        formPanel.setBackground(UIStyles.PRIMARY_DARK);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+
+        JLabel lblAtleta = new JLabel("Atleta:");
+        lblAtleta.setForeground(UIStyles.ACCENT_RED);
+        List<Atleta> atletasSinSuscripcion = adminController.obtenerTodosAtletas().stream()
+                .filter(a -> adminController.obtenerSuscripcionActivaDeAtleta(a.getIdAtleta()) == null)
+                .toList();
+        JComboBox<Atleta> comboAtleta = new JComboBox<>(atletasSinSuscripcion.toArray(new Atleta[0]));
+
+        JLabel lblMembresia = new JLabel("Membresía:");
+        lblMembresia.setForeground(UIStyles.ACCENT_RED);
+        JComboBox<Membresia> comboMembresia = new JComboBox<>(
+                adminController.obtenerMembresias().toArray(new Membresia[0])
+        );
+
+        JLabel lblFechaInicio = new JLabel("Fecha Inicio:");
+        lblFechaInicio.setForeground(UIStyles.ACCENT_RED);
+        JSpinner spinFechaInicio = new JSpinner(new javax.swing.SpinnerDateModel(
+                new java.util.Date(), null, null, java.util.Calendar.DAY_OF_MONTH));
+        JSpinner.DateEditor editorInicio = new JSpinner.DateEditor(spinFechaInicio, "yyyy-MM-dd");
+        spinFechaInicio.setEditor(editorInicio);
+
+        JLabel lblFechaFin = new JLabel("Fecha Fin:");
+        lblFechaFin.setForeground(UIStyles.ACCENT_RED);
+        JSpinner spinFechaFin = new JSpinner(new javax.swing.SpinnerDateModel(
+                new java.util.Date(), null, null, java.util.Calendar.DAY_OF_MONTH));
+        JSpinner.DateEditor editorFin = new JSpinner.DateEditor(spinFechaFin, "yyyy-MM-dd");
+        spinFechaFin.setEditor(editorFin);
+
+        int y = 0;
+        gbc.gridx = 0; gbc.gridy = y++; formPanel.add(lblAtleta, gbc);
+        gbc.gridx = 1; formPanel.add(comboAtleta, gbc);
+        gbc.gridx = 0; gbc.gridy = y++; formPanel.add(lblMembresia, gbc);
+        gbc.gridx = 1; formPanel.add(comboMembresia, gbc);
+        gbc.gridx = 0; gbc.gridy = y++; formPanel.add(lblFechaInicio, gbc);
+        gbc.gridx = 1; formPanel.add(spinFechaInicio, gbc);
+        gbc.gridx = 0; gbc.gridy = y++; formPanel.add(lblFechaFin, gbc);
+        gbc.gridx = 1; formPanel.add(spinFechaFin, gbc);
+
+        JScrollPane scrollForm = new JScrollPane(formPanel);
+        scrollForm.getViewport().setBackground(UIStyles.PRIMARY_DARK);
+        dialog.add(scrollForm, BorderLayout.CENTER);
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
+        buttonPanel.setBackground(UIStyles.SECONDARY_DARK);
+
+        JButton btnGuardar = new JButton("✓ Crear");
+        UIStyles.styleSuccessButton(btnGuardar);
+        btnGuardar.addActionListener(e -> {
+            Atleta atletaSeleccionado = (Atleta) comboAtleta.getSelectedItem();
+            Membresia membresiaSeleccionada = (Membresia) comboMembresia.getSelectedItem();
+
+            if (atletaSeleccionado == null || membresiaSeleccionada == null) {
+                JOptionPane.showMessageDialog(dialog, "Selecciona atleta y membresía", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            java.util.Date dateInicio = (java.util.Date) spinFechaInicio.getValue();
+            java.util.Date dateFin = (java.util.Date) spinFechaFin.getValue();
+            LocalDate fechaInicio = dateInicio.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+            LocalDate fechaFin = dateFin.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+
+            if (fechaFin.isBefore(fechaInicio)) {
+                JOptionPane.showMessageDialog(dialog, "Fecha fin debe ser posterior a fecha inicio", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            adminController.crearSuscripcion(atletaSeleccionado.getIdAtleta(),
+                    membresiaSeleccionada.getIdMembresia(), fechaInicio, fechaFin);
+            JOptionPane.showMessageDialog(dialog, "Suscripción creada exitosamente", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+            dialog.dispose();
+            dispose();
+            new AdminDashboard();
+        });
+
+        JButton btnCancelar = new JButton("✗ Cancelar");
+        UIStyles.styleDangerButton(btnCancelar);
+        btnCancelar.addActionListener(e -> dialog.dispose());
+
+        buttonPanel.add(btnGuardar);
+        buttonPanel.add(btnCancelar);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+
+        dialog.setVisible(true);
+    }
+
+    private void editarSuscripcion(int row) {
+        List<Suscripcion> suscripciones = adminController.obtenerTodasLasSuscripciones();
+        if (row >= suscripciones.size()) return;
+
+        Suscripcion suscripcion = suscripciones.get(row);
+        Atleta atleta = adminController.obtenerTodosAtletas().stream()
+                .filter(a -> a.getIdAtleta() == suscripcion.getIdAtleta())
+                .findFirst()
+                .orElse(null);
+
+        JDialog dialog = new JDialog(this, "Editar Suscripción", true);
+        dialog.setSize(500, 350);
+        dialog.setLocationRelativeTo(this);
+        dialog.getContentPane().setBackground(UIStyles.PRIMARY_DARK);
+
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        formPanel.setBackground(UIStyles.PRIMARY_DARK);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+
+        JLabel lblAtleta = new JLabel("Atleta:");
+        lblAtleta.setForeground(UIStyles.ACCENT_RED);
+        JLabel txtAtleta = new JLabel(atleta != null ? atleta.getNombreCompleto() : "Desconocido");
+        txtAtleta.setForeground(Color.WHITE);
+
+        JLabel lblMembresia = new JLabel("Membresía:");
+        lblMembresia.setForeground(UIStyles.ACCENT_RED);
+        JLabel txtMembresia = new JLabel(suscripcion.getNombreMembresia());
+        txtMembresia.setForeground(Color.WHITE);
+
+        JLabel lblFechaInicio = new JLabel("Fecha Inicio:");
+        lblFechaInicio.setForeground(UIStyles.ACCENT_RED);
+        JSpinner spinFechaInicio = new JSpinner(new javax.swing.SpinnerDateModel(
+                java.sql.Date.valueOf(suscripcion.getFechaInicio()), null, null, java.util.Calendar.DAY_OF_MONTH));
+        JSpinner.DateEditor editorInicio = new JSpinner.DateEditor(spinFechaInicio, "yyyy-MM-dd");
+        spinFechaInicio.setEditor(editorInicio);
+
+        JLabel lblFechaFin = new JLabel("Fecha Fin:");
+        lblFechaFin.setForeground(UIStyles.ACCENT_RED);
+        JSpinner spinFechaFin = new JSpinner(new javax.swing.SpinnerDateModel(
+                java.sql.Date.valueOf(suscripcion.getFechaFin()), null, null, java.util.Calendar.DAY_OF_MONTH));
+        JSpinner.DateEditor editorFin = new JSpinner.DateEditor(spinFechaFin, "yyyy-MM-dd");
+        spinFechaFin.setEditor(editorFin);
+
+        int y = 0;
+        gbc.gridx = 0; gbc.gridy = y++; formPanel.add(lblAtleta, gbc);
+        gbc.gridx = 1; formPanel.add(txtAtleta, gbc);
+        gbc.gridx = 0; gbc.gridy = y++; formPanel.add(lblMembresia, gbc);
+        gbc.gridx = 1; formPanel.add(txtMembresia, gbc);
+        gbc.gridx = 0; gbc.gridy = y++; formPanel.add(lblFechaInicio, gbc);
+        gbc.gridx = 1; formPanel.add(spinFechaInicio, gbc);
+        gbc.gridx = 0; gbc.gridy = y++; formPanel.add(lblFechaFin, gbc);
+        gbc.gridx = 1; formPanel.add(spinFechaFin, gbc);
+
+        JScrollPane scrollForm = new JScrollPane(formPanel);
+        scrollForm.getViewport().setBackground(UIStyles.PRIMARY_DARK);
+        dialog.add(scrollForm, BorderLayout.CENTER);
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
+        buttonPanel.setBackground(UIStyles.SECONDARY_DARK);
+
+        JButton btnGuardar = new JButton("✓ Guardar");
+        UIStyles.styleSuccessButton(btnGuardar);
+        btnGuardar.addActionListener(e -> {
+            java.util.Date dateInicio = (java.util.Date) spinFechaInicio.getValue();
+            java.util.Date dateFin = (java.util.Date) spinFechaFin.getValue();
+            LocalDate fechaInicio = dateInicio.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+            LocalDate fechaFin = dateFin.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+
+            if (fechaFin.isBefore(fechaInicio)) {
+                JOptionPane.showMessageDialog(dialog, "Fecha fin debe ser posterior a fecha inicio", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            suscripcion.setFechaInicio(fechaInicio);
+            suscripcion.setFechaFin(fechaFin);
+            adminController.actualizarSuscripcion(suscripcion);
+            JOptionPane.showMessageDialog(dialog, "Suscripción actualizada exitosamente", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+            dialog.dispose();
+            dispose();
+            new AdminDashboard();
+        });
+
+        JButton btnCancelar = new JButton("✗ Cancelar");
+        UIStyles.styleDangerButton(btnCancelar);
+        btnCancelar.addActionListener(e -> dialog.dispose());
+
+        buttonPanel.add(btnGuardar);
+        buttonPanel.add(btnCancelar);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+
+        dialog.setVisible(true);
+    }
+
+    private void revocarSuscripcion(int row) {
+        List<Suscripcion> suscripciones = adminController.obtenerTodasLasSuscripciones();
+        if (row >= suscripciones.size()) return;
+
+        Suscripcion suscripcion = suscripciones.get(row);
+        Atleta atleta = adminController.obtenerTodosAtletas().stream()
+                .filter(a -> a.getIdAtleta() == suscripcion.getIdAtleta())
+                .findFirst()
+                .orElse(null);
+
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "¿Desactivar suscripción para " + (atleta != null ? atleta.getNombreCompleto() : "Desconocido") + "?",
+                "Revocar Suscripción",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE);
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            adminController.revocarSuscripcion(suscripcion.getIdSuscripcion());
+            JOptionPane.showMessageDialog(this, "Suscripción revocada exitosamente");
+            dispose();
+            new AdminDashboard();
         }
     }
 }

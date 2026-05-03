@@ -2,7 +2,9 @@ package com.ironcladbox.controller;
 
 import com.ironcladbox.model.*;
 import com.ironcladbox.dao.*;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class AdminController {
     private IUsuarioDAO usuarioDAO;
@@ -95,5 +97,51 @@ public class AdminController {
 
     public int getTotalClases() {
         return obtenerClases().size();
+    }
+
+    public List<Suscripcion> obtenerTodasLasSuscripciones() {
+        return suscripcionDAO.obtenerTodas().stream()
+                .filter(Suscripcion::isActiva)
+                .collect(Collectors.toList());
+    }
+
+    public List<Suscripcion> obtenerSuscripcionesDeAtleta(int idAtleta) {
+        return suscripcionDAO.obtenerPorAtleta(idAtleta);
+    }
+
+    public Suscripcion obtenerSuscripcionActivaDeAtleta(int idAtleta) {
+        return suscripcionDAO.obtenerActivaDeAtleta(idAtleta);
+    }
+
+    public void crearSuscripcion(int idAtleta, int idMembresia, LocalDate fechaInicio, LocalDate fechaFin) {
+        Suscripcion suscripcion = new Suscripcion(idAtleta, idMembresia, fechaInicio, fechaFin);
+        suscripcionDAO.guardar(suscripcion);
+    }
+
+    public void actualizarSuscripcion(Suscripcion suscripcion) {
+        suscripcionDAO.actualizar(suscripcion);
+    }
+
+    public void revocarSuscripcion(int idSuscripcion) {
+        suscripcionDAO.eliminar(idSuscripcion);
+    }
+
+    public void suspenderSuscripcion(int idSuscripcion, LocalDate nuevaFechaFin) {
+        Suscripcion suscripcion = suscripcionDAO.obtenerPorId(idSuscripcion);
+        if (suscripcion != null) {
+            suscripcion.setFechaFin(nuevaFechaFin);
+            suscripcionDAO.actualizar(suscripcion);
+        }
+    }
+
+    public int getTotalSuscripciones() {
+        return obtenerTodasLasSuscripciones().size();
+    }
+
+    public int getTotalMembresias() {
+        return obtenerMembresias().stream()
+                .filter(Membresia::isActiva)
+                .toList()
+                .size();
     }
 }

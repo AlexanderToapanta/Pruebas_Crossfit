@@ -4,8 +4,12 @@ import com.ironcladbox.controller.AuthController;
 import com.ironcladbox.controller.AtletaController;
 import com.ironcladbox.util.UIStyles;
 import com.ironcladbox.model.Usuario;
+import com.ironcladbox.model.Atleta;
 import com.ironcladbox.model.Clase;
 import com.ironcladbox.model.Suscripcion;
+import com.ironcladbox.model.Membresia;
+import com.ironcladbox.dao.AtletaDAO;
+import com.ironcladbox.dao.IAtletaDAO;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -14,15 +18,19 @@ import java.util.List;
 
 public class AtletaDashboard extends JFrame {
     private Usuario usuarioActual;
+    private Atleta atletaActual;
     private AuthController authController;
     private AtletaController atletaController;
+    private IAtletaDAO atletaDAO;
     private JLabel suscripcionLabel;
     private JLabel imcLabel;
 
     public AtletaDashboard() {
         authController = AuthController.getInstance();
         atletaController = new AtletaController();
+        atletaDAO = new AtletaDAO();
         usuarioActual = authController.getUsuarioActual();
+        atletaActual = atletaDAO.obtenerPorIdUsuario(usuarioActual.getIdUsuario());
         initializeUI();
     }
 
@@ -141,7 +149,8 @@ public class AtletaDashboard extends JFrame {
         gbc.insets = new Insets(15, 20, 15, 20);
         gbc.anchor = GridBagConstraints.WEST;
 
-        Suscripcion suscripcion = atletaController.obtenerSuscripcionActiva(usuarioActual.getIdUsuario());
+        Suscripcion suscripcion = atletaActual != null ?
+                atletaController.obtenerSuscripcionActiva(atletaActual.getIdAtleta()) : null;
 
         if (suscripcion != null) {
             addInfoRow(panel, "💳 Membresía:", suscripcion.getNombreMembresia(), 0, gbc);
@@ -162,6 +171,7 @@ public class AtletaDashboard extends JFrame {
 
         JButton renewButton = new JButton("🔄 Renovar o Cambiar Membresía");
         UIStyles.styleSuccessButton(renewButton);
+        renewButton.addActionListener(e -> mostrarDialogoRenovacion());
         gbc.gridy = 5;
         panel.add(renewButton, gbc);
 
@@ -197,16 +207,97 @@ public class AtletaDashboard extends JFrame {
     }
 
     private void logout() {
-        int confirm = JOptionPane.showConfirmDialog(this, 
-            "¿Confirmas que deseas cerrar sesión?", 
+        int confirm = JOptionPane.showConfirmDialog(this,
+            "¿Confirmas que deseas cerrar sesión?",
             "Cerrar Sesión",
             JOptionPane.YES_NO_OPTION,
             JOptionPane.QUESTION_MESSAGE);
-        
+
         if (confirm == JOptionPane.YES_OPTION) {
             authController.logout();
             dispose();
             new LoginView();
         }
+    }
+
+    private void mostrarDialogoRenovacion() {
+        if (atletaActual == null) {
+            JOptionPane.showMessageDialog(this, "Error: No se pudo obtener información del atleta", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        Suscripcion suscripcionActual = atletaController.obtenerSuscripcionActiva(atletaActual.getIdAtleta());
+
+        if (suscripcionActual == null) {
+            JOptionPane.showMessageDialog(this, "No tienes una suscripción activa para renovar", "Error", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        JDialog dialog = new JDialog(this, "Renovar o Cambiar Membresía", true);
+        dialog.setSize(500, 400);
+        dialog.setLocationRelativeTo(this);
+        dialog.getContentPane().setBackground(UIStyles.PRIMARY_DARK);
+
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        formPanel.setBackground(UIStyles.PRIMARY_DARK);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+
+        JLabel lblActual = new JLabel("Membresía Actual:");
+        lblActual.setForeground(UIStyles.ACCENT_RED);
+        JLabel txtActual = new JLabel(suscripcionActual.getNombreMembresia() + " - $" + String.format("%.2f", suscripcionActual.getPrecioMembresia()));
+        txtActual.setForeground(UIStyles.SUCCESS_GREEN);
+
+        JLabel lblNueva = new JLabel("Nueva Membresía:");
+        lblNueva.setForeground(UIStyles.ACCENT_RED);
+        List<Membresia> membresias = atletaController.obtenerMembresiasCambio();
+        JComboBox<Membresia> comboMembresia = new JComboBox<>(membresias.toArray(new Membresia[0]));
+
+        int y = 0;
+        gbc.gridx = 0; gbc.gridy = y++; formPanel.add(lblActual, gbc);
+        gbc.gridx = 1; formPanel.add(txtActual, gbc);
+        gbc.gridx = 0; gbc.gridy = y++; formPanel.add(lblNueva, gbc);
+        gbc.gridx = 1; formPanel.add(comboMembresia, gbc);
+
+        JScrollPane scrollForm = new JScrollPane(formPanel);
+        scrollForm.getViewport().setBackground(UIStyles.PRIMARY_DARK);
+        dialog.add(scrollForm, BorderLayout.CENTER);
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
+        buttonPanel.setBackground(UIStyles.SECONDARY_DARK);
+
+        JButton btnRenovar = new JButton("✓ Renovar");
+        UIStyles.styleSuccessButton(btnRenovar);
+        btnRenovar.addActionListener(e -> {
+            Membresia membresiaSeleccionada = (Membresia) comboMembresia.getSelectedItem();
+
+            if (membresiaSeleccionada == null) {
+                JOptionPane.showMessageDialog(dialog, "Selecciona una membresía", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            if (membresiaSeleccionada.getIdMembresia() == suscripcionActual.getIdMembresia()) {
+                JOptionPane.showMessageDialog(dialog, "Selecciona una membresía diferente", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            atletaController.renovarMembresia(atletaActual.getIdAtleta(), membresiaSeleccionada.getIdMembresia());
+            JOptionPane.showMessageDialog(dialog, "Membresía renovada exitosamente", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+            dialog.dispose();
+            dispose();
+            new AtletaDashboard();
+        });
+
+        JButton btnCancelar = new JButton("✗ Cancelar");
+        UIStyles.styleDangerButton(btnCancelar);
+        btnCancelar.addActionListener(e -> dialog.dispose());
+
+        buttonPanel.add(btnRenovar);
+        buttonPanel.add(btnCancelar);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+
+        dialog.setVisible(true);
     }
 }
