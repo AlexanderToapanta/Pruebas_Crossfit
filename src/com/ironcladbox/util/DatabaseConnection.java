@@ -7,14 +7,14 @@ import java.sql.SQLException;
 public class DatabaseConnection {
     private static final String URL = "jdbc:postgresql://localhost:5432/ironcladbox";
     private static final String USER = "postgres";
-    private static final String PASSWORD = "1234";
+    private static final String PASSWORD = "Ali160105";
     private static Connection connection;
 
     static {
         try {
             Class.forName("org.postgresql.Driver");
         } catch (ClassNotFoundException e) {
-            e.printStackTrace();
+            System.err.println("Error loading database driver: " + e.getMessage());
         }
     }
 
@@ -30,7 +30,7 @@ public class DatabaseConnection {
             try {
                 connection.close();
             } catch (SQLException e) {
-                e.printStackTrace();
+                System.err.println("Error closing database connection: " + e.getMessage());
             }
         }
     }
@@ -43,7 +43,7 @@ public class DatabaseConnection {
                 closeConnection();
             }
         } catch (SQLException e) {
-            System.out.println("✗ Error en la conexión: " + e.getMessage());
+            System.err.println("✗ Error en la conexión: " + e.getMessage());
         }
     }
 }

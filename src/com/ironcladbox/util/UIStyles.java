@@ -1,11 +1,10 @@
 package com.ironcladbox.util;
 
-import javax.swing.*;
-import javax.swing.border.Border;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import javax.imageio.ImageIO;
+import javax.swing.*;
 
 /**
  * Clase centralizada para estilos UI consistentes
@@ -111,7 +110,7 @@ public class UIStyles {
         table.setGridColor(BORDER_COLOR);
         table.setSelectionBackground(ACCENT_RED);
         table.setSelectionForeground(PRIMARY_DARK);
-        table.setRowHeight(28);
+        table.setRowHeight(48);
         table.getTableHeader().setBackground(new Color(40, 40, 50));
         table.getTableHeader().setForeground(ACCENT_RED);
         table.getTableHeader().setFont(FONT_BUTTON);

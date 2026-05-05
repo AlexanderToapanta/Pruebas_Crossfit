@@ -1,20 +1,19 @@
 package com.ironcladbox.view;
 
-import com.ironcladbox.controller.AuthController;
 import com.ironcladbox.controller.AtletaController;
-import com.ironcladbox.util.UIStyles;
-import com.ironcladbox.model.Usuario;
-import com.ironcladbox.model.Atleta;
-import com.ironcladbox.model.Clase;
-import com.ironcladbox.model.Suscripcion;
-import com.ironcladbox.model.Membresia;
+import com.ironcladbox.controller.AuthController;
 import com.ironcladbox.dao.AtletaDAO;
 import com.ironcladbox.dao.IAtletaDAO;
-
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
+import com.ironcladbox.model.Atleta;
+import com.ironcladbox.model.Clase;
+import com.ironcladbox.model.Membresia;
+import com.ironcladbox.model.Suscripcion;
+import com.ironcladbox.model.Usuario;
+import com.ironcladbox.util.UIStyles;
 import java.awt.*;
 import java.util.List;
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 
 public class AtletaDashboard extends JFrame {
     private Usuario usuarioActual;
@@ -47,8 +46,9 @@ public class AtletaDashboard extends JFrame {
         JButton logoutButton = new JButton("🚪 Cerrar Sesión");
         UIStyles.styleDangerButton(logoutButton);
         logoutButton.addActionListener(e -> logout());
-        
-        JPanel headerPanel = UIStyles.createHeaderPanel("💪 ATLETA - " + usuarioActual.getNombreCompleto(), logoutButton);
+
+        JPanel headerPanel = UIStyles.createHeaderPanel("💪 ATLETA - " + usuarioActual.getNombreCompleto(),
+                logoutButton);
         mainPanel.add(headerPanel, BorderLayout.NORTH);
 
         // Content Panel
@@ -81,7 +81,8 @@ public class AtletaDashboard extends JFrame {
         addInfoRow(panel, "👤 Nombre:", usuarioActual.getNombre(), 0, gbc);
         addInfoRow(panel, "👤 Apellido:", usuarioActual.getApellido(), 1, gbc);
         addInfoRow(panel, "📧 Email:", usuarioActual.getEmail(), 2, gbc);
-        addInfoRow(panel, "📱 Teléfono:", usuarioActual.getTelefono() != null ? usuarioActual.getTelefono() : "N/A", 3, gbc);
+        addInfoRow(panel, "📱 Teléfono:", usuarioActual.getTelefono() != null ? usuarioActual.getTelefono() : "N/A", 3,
+                gbc);
 
         imcLabel = new JLabel("IMC: Calculando...");
         imcLabel.setForeground(UIStyles.ACCENT_RED);
@@ -102,7 +103,7 @@ public class AtletaDashboard extends JFrame {
         panel.setBackground(UIStyles.PRIMARY_DARK);
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        String[] columnas = {"ID", "Nombre", "Entrenador", "Día", "Horario", "Capacidad"};
+        String[] columnas = { "ID", "Nombre", "Entrenador", "Día", "Horario", "Capacidad" };
         DefaultTableModel modelo = new DefaultTableModel(columnas, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -112,19 +113,19 @@ public class AtletaDashboard extends JFrame {
 
         List<Clase> clases = atletaController.obtenerClasesDisponibles();
         for (Clase clase : clases) {
-            modelo.addRow(new Object[]{
-                clase.getIdClase(),
-                clase.getNombre(),
-                clase.getNombreEntrenador(),
-                clase.getDiaSemana(),
-                clase.getHorarioInicio() + " - " + clase.getHorarioFin(),
-                clase.getCapacidadMaxima()
+            modelo.addRow(new Object[] {
+                    clase.getIdClase(),
+                    clase.getNombre(),
+                    clase.getNombreEntrenador(),
+                    clase.getDiaSemana(),
+                    clase.getHorarioInicio() + " - " + clase.getHorarioFin(),
+                    clase.getCapacidadMaxima()
             });
         }
 
         JTable clasesTable = new JTable(modelo);
         UIStyles.styleTable(clasesTable);
-        
+
         JScrollPane scrollPane = new JScrollPane(clasesTable);
         scrollPane.setBackground(UIStyles.SECONDARY_DARK);
         scrollPane.getViewport().setBackground(UIStyles.SECONDARY_DARK);
@@ -149,15 +150,16 @@ public class AtletaDashboard extends JFrame {
         gbc.insets = new Insets(15, 20, 15, 20);
         gbc.anchor = GridBagConstraints.WEST;
 
-        Suscripcion suscripcion = atletaActual != null ?
-                atletaController.obtenerSuscripcionActiva(atletaActual.getIdAtleta()) : null;
+        Suscripcion suscripcion = atletaActual != null
+                ? atletaController.obtenerSuscripcionActiva(atletaActual.getIdAtleta())
+                : null;
 
         if (suscripcion != null) {
             addInfoRow(panel, "💳 Membresía:", suscripcion.getNombreMembresia(), 0, gbc);
             addInfoRow(panel, "💰 Precio:", "$" + suscripcion.getPrecioMembresia(), 1, gbc);
             addInfoRow(panel, "📅 Inicio:", suscripcion.getFechaInicio().toString(), 2, gbc);
             addInfoRow(panel, "📅 Vencimiento:", suscripcion.getFechaFin().toString(), 3, gbc);
-            
+
             String estado = suscripcion.isVigente() ? "✓ Vigente" : "✗ Vencida";
             Color estadoColor = suscripcion.isVigente() ? UIStyles.SUCCESS_GREEN : UIStyles.DANGER_RED;
             addInfoRowWithColor(panel, "Estado:", estado, estadoColor, 4, gbc);
@@ -191,8 +193,9 @@ public class AtletaDashboard extends JFrame {
         gbc.gridx = 1;
         panel.add(valueComp, gbc);
     }
-    
-    private void addInfoRowWithColor(JPanel panel, String label, String value, Color valueColor, int row, GridBagConstraints gbc) {
+
+    private void addInfoRowWithColor(JPanel panel, String label, String value, Color valueColor, int row,
+            GridBagConstraints gbc) {
         JLabel labelComp = new JLabel(label);
         UIStyles.styleLabel(labelComp, true);
         gbc.gridx = 0;
@@ -207,13 +210,17 @@ public class AtletaDashboard extends JFrame {
     }
 
     private void logout() {
-        int confirm = JOptionPane.showConfirmDialog(this,
-            "¿Confirmas que deseas cerrar sesión?",
-            "Cerrar Sesión",
-            JOptionPane.YES_NO_OPTION,
-            JOptionPane.QUESTION_MESSAGE);
+        Object[] opciones = { "Sí", "No" };
+        int confirm = JOptionPane.showOptionDialog(this,
+                "¿Confirmas que deseas cerrar sesión?",
+                "Cerrar Sesión",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                opciones,
+                opciones[0]);
 
-        if (confirm == JOptionPane.YES_OPTION) {
+        if (confirm == 0) {
             authController.logout();
             dispose();
             new LoginView();
@@ -222,14 +229,16 @@ public class AtletaDashboard extends JFrame {
 
     private void mostrarDialogoRenovacion() {
         if (atletaActual == null) {
-            JOptionPane.showMessageDialog(this, "Error: No se pudo obtener información del atleta", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error: No se pudo obtener información del atleta", "Error",
+                    JOptionPane.ERROR_MESSAGE);
             return;
         }
 
         Suscripcion suscripcionActual = atletaController.obtenerSuscripcionActiva(atletaActual.getIdAtleta());
 
         if (suscripcionActual == null) {
-            JOptionPane.showMessageDialog(this, "No tienes una suscripción activa para renovar", "Error", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "No tienes una suscripción activa para renovar", "Error",
+                    JOptionPane.WARNING_MESSAGE);
             return;
         }
 
@@ -247,7 +256,8 @@ public class AtletaDashboard extends JFrame {
 
         JLabel lblActual = new JLabel("Membresía Actual:");
         lblActual.setForeground(UIStyles.ACCENT_RED);
-        JLabel txtActual = new JLabel(suscripcionActual.getNombreMembresia() + " - $" + String.format("%.2f", suscripcionActual.getPrecioMembresia()));
+        JLabel txtActual = new JLabel(suscripcionActual.getNombreMembresia() + " - $"
+                + String.format("%.2f", suscripcionActual.getPrecioMembresia()));
         txtActual.setForeground(UIStyles.SUCCESS_GREEN);
 
         JLabel lblNueva = new JLabel("Nueva Membresía:");
@@ -256,10 +266,16 @@ public class AtletaDashboard extends JFrame {
         JComboBox<Membresia> comboMembresia = new JComboBox<>(membresias.toArray(new Membresia[0]));
 
         int y = 0;
-        gbc.gridx = 0; gbc.gridy = y++; formPanel.add(lblActual, gbc);
-        gbc.gridx = 1; formPanel.add(txtActual, gbc);
-        gbc.gridx = 0; gbc.gridy = y++; formPanel.add(lblNueva, gbc);
-        gbc.gridx = 1; formPanel.add(comboMembresia, gbc);
+        gbc.gridx = 0;
+        gbc.gridy = y++;
+        formPanel.add(lblActual, gbc);
+        gbc.gridx = 1;
+        formPanel.add(txtActual, gbc);
+        gbc.gridx = 0;
+        gbc.gridy = y++;
+        formPanel.add(lblNueva, gbc);
+        gbc.gridx = 1;
+        formPanel.add(comboMembresia, gbc);
 
         JScrollPane scrollForm = new JScrollPane(formPanel);
         scrollForm.getViewport().setBackground(UIStyles.PRIMARY_DARK);
@@ -279,12 +295,14 @@ public class AtletaDashboard extends JFrame {
             }
 
             if (membresiaSeleccionada.getIdMembresia() == suscripcionActual.getIdMembresia()) {
-                JOptionPane.showMessageDialog(dialog, "Selecciona una membresía diferente", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(dialog, "Selecciona una membresía diferente", "Error",
+                        JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
             atletaController.renovarMembresia(atletaActual.getIdAtleta(), membresiaSeleccionada.getIdMembresia());
-            JOptionPane.showMessageDialog(dialog, "Membresía renovada exitosamente", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(dialog, "Membresía renovada exitosamente", "Éxito",
+                    JOptionPane.INFORMATION_MESSAGE);
             dialog.dispose();
             dispose();
             new AtletaDashboard();

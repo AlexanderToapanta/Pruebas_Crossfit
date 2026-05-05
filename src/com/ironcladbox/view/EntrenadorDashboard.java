@@ -2,16 +2,15 @@ package com.ironcladbox.view;
 
 import com.ironcladbox.controller.AuthController;
 import com.ironcladbox.controller.EntrenadorController;
-import com.ironcladbox.util.UIStyles;
-import com.ironcladbox.model.Usuario;
 import com.ironcladbox.model.Clase;
 import com.ironcladbox.model.Entrenador;
-
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
+import com.ironcladbox.model.Usuario;
+import com.ironcladbox.util.UIStyles;
 import java.awt.*;
 import java.time.LocalTime;
 import java.util.List;
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 
 public class EntrenadorDashboard extends JFrame {
     private Usuario usuarioActual;
@@ -38,8 +37,9 @@ public class EntrenadorDashboard extends JFrame {
         JButton logoutButton = new JButton("🚪 Cerrar Sesión");
         UIStyles.styleDangerButton(logoutButton);
         logoutButton.addActionListener(e -> logout());
-        
-        JPanel headerPanel = UIStyles.createHeaderPanel("🏋️ ENTRENADOR - " + usuarioActual.getNombreCompleto(), logoutButton);
+
+        JPanel headerPanel = UIStyles.createHeaderPanel("🏋️ ENTRENADOR - " + usuarioActual.getNombreCompleto(),
+                logoutButton);
         mainPanel.add(headerPanel, BorderLayout.NORTH);
 
         // Content Panel
@@ -50,7 +50,7 @@ public class EntrenadorDashboard extends JFrame {
         // Panel de clases que se recargará dinámicamente
         JPanel classesPanel = new JPanel(new BorderLayout());
         classesPanel.setBackground(UIStyles.PRIMARY_DARK);
-        
+
         tabbedPane.addTab("📚 Mis Clases", classesPanel);
         tabbedPane.addTab("👤 Mi Perfil", createProfileTab());
 
@@ -78,7 +78,7 @@ public class EntrenadorDashboard extends JFrame {
         panel.setBackground(UIStyles.PRIMARY_DARK);
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        String[] columnas = {"ID", "Nombre", "Día", "Horario", "Capacidad", "Estado"};
+        String[] columnas = { "ID", "Nombre", "Día", "Horario", "Capacidad", "Estado" };
         DefaultTableModel modelo = new DefaultTableModel(columnas, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -90,19 +90,19 @@ public class EntrenadorDashboard extends JFrame {
         Entrenador entrenadorActual = (Entrenador) usuarioActual;
         List<Clase> clases = entrenadorController.obtenerMisClases(entrenadorActual.getIdEntrenador());
         for (Clase clase : clases) {
-            modelo.addRow(new Object[]{
-                clase.getIdClase(),
-                clase.getNombre(),
-                clase.getDiaSemana(),
-                clase.getHorarioInicio() + " - " + clase.getHorarioFin(),
-                clase.getCapacidadMaxima(),
-                clase.isActiva() ? "✓ Activa" : "✗ Inactiva"
+            modelo.addRow(new Object[] {
+                    clase.getIdClase(),
+                    clase.getNombre(),
+                    clase.getDiaSemana(),
+                    clase.getHorarioInicio() + " - " + clase.getHorarioFin(),
+                    clase.getCapacidadMaxima(),
+                    clase.isActiva() ? "✓ Activa" : "✗ Inactiva"
             });
         }
 
         JTable clasesTable = new JTable(modelo);
         UIStyles.styleTable(clasesTable);
-        
+
         JScrollPane scrollPane = new JScrollPane(clasesTable);
         scrollPane.setBackground(UIStyles.PRIMARY_DARK);
         scrollPane.getViewport().setBackground(UIStyles.PRIMARY_DARK);
@@ -120,7 +120,8 @@ public class EntrenadorDashboard extends JFrame {
                 int idClase = (int) modelo.getValueAt(clasesTable.getSelectedRow(), 0);
                 registrarAsistencia(idClase);
             } else {
-                JOptionPane.showMessageDialog(this, "Selecciona una clase de la tabla", "Información", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Selecciona una clase de la tabla", "Información",
+                        JOptionPane.INFORMATION_MESSAGE);
             }
         });
         bottomPanel.add(attendanceButton);
@@ -136,7 +137,8 @@ public class EntrenadorDashboard extends JFrame {
     }
 
     private void registrarAsistencia(int idClase) {
-        JOptionPane.showMessageDialog(this, "Registro de asistencia para clase " + idClase + " en desarrollo", "Información", JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(this, "Registro de asistencia para clase " + idClase + " en desarrollo",
+                "Información", JOptionPane.INFORMATION_MESSAGE);
     }
 
     private void nuevaClase() {
@@ -171,7 +173,7 @@ public class EntrenadorDashboard extends JFrame {
 
         JLabel lblDia = new JLabel("Día:");
         lblDia.setForeground(UIStyles.ACCENT_RED);
-        String[] dias = {"Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"};
+        String[] dias = { "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo" };
         JComboBox<String> comboDia = new JComboBox<>(dias);
         comboDia.setBackground(UIStyles.SECONDARY_DARK);
         comboDia.setForeground(UIStyles.TEXT_PRIMARY);
@@ -193,18 +195,36 @@ public class EntrenadorDashboard extends JFrame {
         UIStyles.styleTextField(txtCapacidad);
 
         int y = 0;
-        gbc.gridx = 0; gbc.gridy = y++; formPanel.add(lblNombre, gbc);
-        gbc.gridx = 1; formPanel.add(txtNombre, gbc);
-        gbc.gridx = 0; gbc.gridy = y++; formPanel.add(lblDescripcion, gbc);
-        gbc.gridx = 1; formPanel.add(descripcionScroll, gbc);
-        gbc.gridx = 0; gbc.gridy = y++; formPanel.add(lblDia, gbc);
-        gbc.gridx = 1; formPanel.add(comboDia, gbc);
-        gbc.gridx = 0; gbc.gridy = y++; formPanel.add(lblHoraInicio, gbc);
-        gbc.gridx = 1; formPanel.add(txtHoraInicio, gbc);
-        gbc.gridx = 0; gbc.gridy = y++; formPanel.add(lblHoraFin, gbc);
-        gbc.gridx = 1; formPanel.add(txtHoraFin, gbc);
-        gbc.gridx = 0; gbc.gridy = y++; formPanel.add(lblCapacidad, gbc);
-        gbc.gridx = 1; formPanel.add(txtCapacidad, gbc);
+        gbc.gridx = 0;
+        gbc.gridy = y++;
+        formPanel.add(lblNombre, gbc);
+        gbc.gridx = 1;
+        formPanel.add(txtNombre, gbc);
+        gbc.gridx = 0;
+        gbc.gridy = y++;
+        formPanel.add(lblDescripcion, gbc);
+        gbc.gridx = 1;
+        formPanel.add(descripcionScroll, gbc);
+        gbc.gridx = 0;
+        gbc.gridy = y++;
+        formPanel.add(lblDia, gbc);
+        gbc.gridx = 1;
+        formPanel.add(comboDia, gbc);
+        gbc.gridx = 0;
+        gbc.gridy = y++;
+        formPanel.add(lblHoraInicio, gbc);
+        gbc.gridx = 1;
+        formPanel.add(txtHoraInicio, gbc);
+        gbc.gridx = 0;
+        gbc.gridy = y++;
+        formPanel.add(lblHoraFin, gbc);
+        gbc.gridx = 1;
+        formPanel.add(txtHoraFin, gbc);
+        gbc.gridx = 0;
+        gbc.gridy = y++;
+        formPanel.add(lblCapacidad, gbc);
+        gbc.gridx = 1;
+        formPanel.add(txtCapacidad, gbc);
 
         JScrollPane scrollForm = new JScrollPane(formPanel);
         scrollForm.getViewport().setBackground(UIStyles.PRIMARY_DARK);
@@ -218,7 +238,7 @@ public class EntrenadorDashboard extends JFrame {
         btnGuardar.addActionListener(e -> {
             try {
                 Entrenador entrenadorActual = (Entrenador) usuarioActual;
-                
+
                 Clase clase = new Clase();
                 clase.setNombre(txtNombre.getText().trim());
                 clase.setDescripcion(txtDescripcion.getText().trim());
@@ -231,19 +251,22 @@ public class EntrenadorDashboard extends JFrame {
                 clase.setActiva(true);
 
                 if (clase.getNombre().isEmpty() || clase.getDescripcion().isEmpty()) {
-                    JOptionPane.showMessageDialog(dialog, "Completa nombre y descripción", "Error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(dialog, "Completa nombre y descripción", "Error",
+                            JOptionPane.ERROR_MESSAGE);
                     return;
                 }
 
                 entrenadorController.crearClase(clase);
-                JOptionPane.showMessageDialog(dialog, "Clase creada exitosamente", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(dialog, "Clase creada exitosamente", "Éxito",
+                        JOptionPane.INFORMATION_MESSAGE);
                 dialog.dispose();
-                
+
                 // Recargar el dashboard
                 dispose();
                 new EntrenadorDashboard();
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(dialog, "Revisa los datos. Usa formato HH:mm en los horarios.", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(dialog, "Revisa los datos. Usa formato HH:mm en los horarios.", "Error",
+                        JOptionPane.ERROR_MESSAGE);
             }
         });
 
@@ -268,7 +291,8 @@ public class EntrenadorDashboard extends JFrame {
         addInfoRow(panel, "👤 Nombre:", usuarioActual.getNombre(), 0, gbc);
         addInfoRow(panel, "👤 Apellido:", usuarioActual.getApellido(), 1, gbc);
         addInfoRow(panel, "📧 Email:", usuarioActual.getEmail(), 2, gbc);
-        addInfoRow(panel, "📱 Teléfono:", usuarioActual.getTelefono() != null ? usuarioActual.getTelefono() : "N/A", 3, gbc);
+        addInfoRow(panel, "📱 Teléfono:", usuarioActual.getTelefono() != null ? usuarioActual.getTelefono() : "N/A", 3,
+                gbc);
 
         return panel;
     }
@@ -288,13 +312,17 @@ public class EntrenadorDashboard extends JFrame {
     }
 
     private void logout() {
-        int confirm = JOptionPane.showConfirmDialog(this, 
-            "¿Confirmas que deseas cerrar sesión?", 
-            "Cerrar Sesión",
-            JOptionPane.YES_NO_OPTION,
-            JOptionPane.QUESTION_MESSAGE);
-        
-        if (confirm == JOptionPane.YES_OPTION) {
+        Object[] opciones = { "Sí", "No" };
+        int confirm = JOptionPane.showOptionDialog(this,
+                "¿Confirmas que deseas cerrar sesión?",
+                "Cerrar Sesión",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                opciones,
+                opciones[0]);
+
+        if (confirm == 0) {
             authController.logout();
             dispose();
             new LoginView();

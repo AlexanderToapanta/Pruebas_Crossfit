@@ -1,13 +1,12 @@
 package com.ironcladbox.view;
 
 import com.ironcladbox.controller.AuthController;
-import com.ironcladbox.util.UIStyles;
 import com.ironcladbox.model.Rol;
-
-import javax.swing.*;
+import com.ironcladbox.util.UIStyles;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import javax.swing.*;
 
 public class LoginView extends JFrame {
     private JTextField emailField;
@@ -205,6 +204,7 @@ public class LoginView extends JFrame {
     }
 
     public static void main(String[] args) {
+        java.util.Locale.setDefault(new java.util.Locale("es", "ES"));
         SwingUtilities.invokeLater(() -> new LoginView());
     }
 }
