@@ -114,11 +114,13 @@ public class AdminController {
     }
 
     public void crearSuscripcion(int idAtleta, int idMembresia, LocalDate fechaInicio, LocalDate fechaFin) {
+        validarRangoFechas(fechaInicio, fechaFin);
         Suscripcion suscripcion = new Suscripcion(idAtleta, idMembresia, fechaInicio, fechaFin);
         suscripcionDAO.guardar(suscripcion);
     }
 
     public void actualizarSuscripcion(Suscripcion suscripcion) {
+        validarRangoFechas(suscripcion.getFechaInicio(), suscripcion.getFechaFin());
         suscripcionDAO.actualizar(suscripcion);
     }
 
@@ -129,6 +131,7 @@ public class AdminController {
     public void suspenderSuscripcion(int idSuscripcion, LocalDate nuevaFechaFin) {
         Suscripcion suscripcion = suscripcionDAO.obtenerPorId(idSuscripcion);
         if (suscripcion != null) {
+            validarRangoFechas(suscripcion.getFechaInicio(), nuevaFechaFin);
             suscripcion.setFechaFin(nuevaFechaFin);
             suscripcionDAO.actualizar(suscripcion);
         }
@@ -143,5 +146,14 @@ public class AdminController {
                 .filter(Membresia::isActiva)
                 .toList()
                 .size();
+    }
+
+    private void validarRangoFechas(LocalDate fechaInicio, LocalDate fechaFin) {
+        if (fechaInicio == null || fechaFin == null) {
+            throw new IllegalArgumentException("Fecha inicio y fin son requeridas");
+        }
+        if (!fechaFin.isAfter(fechaInicio)) {
+            throw new IllegalArgumentException("Fecha fin debe ser posterior a fecha inicio");
+        }
     }
 }

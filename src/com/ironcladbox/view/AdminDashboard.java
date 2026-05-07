@@ -1917,19 +1917,23 @@ public class AdminDashboard extends JFrame {
             LocalDate fechaInicio = dateInicio.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
             LocalDate fechaFin = dateFin.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
 
-            if (fechaFin.isBefore(fechaInicio)) {
+            if (!fechaFin.isAfter(fechaInicio)) {
                 JOptionPane.showMessageDialog(dialog, "Fecha fin debe ser posterior a fecha inicio", "Error",
                         JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
-            adminController.crearSuscripcion(atletaSeleccionado.getIdAtleta(),
-                    membresiaSeleccionada.getIdMembresia(), fechaInicio, fechaFin);
-            JOptionPane.showMessageDialog(dialog, "Suscripción creada exitosamente", "Éxito",
-                    JOptionPane.INFORMATION_MESSAGE);
-            dialog.dispose();
-            dispose();
-            new AdminDashboard();
+            try {
+                adminController.crearSuscripcion(atletaSeleccionado.getIdAtleta(),
+                        membresiaSeleccionada.getIdMembresia(), fechaInicio, fechaFin);
+                JOptionPane.showMessageDialog(dialog, "Suscripción creada exitosamente", "Éxito",
+                        JOptionPane.INFORMATION_MESSAGE);
+                dialog.dispose();
+                dispose();
+                new AdminDashboard();
+            } catch (IllegalArgumentException ex) {
+                JOptionPane.showMessageDialog(dialog, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
         });
 
         JButton btnCancelar = new JButton("✗ Cancelar");
@@ -2027,20 +2031,24 @@ public class AdminDashboard extends JFrame {
             LocalDate fechaInicio = dateInicio.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
             LocalDate fechaFin = dateFin.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
 
-            if (fechaFin.isBefore(fechaInicio)) {
+            if (!fechaFin.isAfter(fechaInicio)) {
                 JOptionPane.showMessageDialog(dialog, "Fecha fin debe ser posterior a fecha inicio", "Error",
                         JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
-            suscripcion.setFechaInicio(fechaInicio);
-            suscripcion.setFechaFin(fechaFin);
-            adminController.actualizarSuscripcion(suscripcion);
-            JOptionPane.showMessageDialog(dialog, "Suscripción actualizada exitosamente", "Éxito",
-                    JOptionPane.INFORMATION_MESSAGE);
-            dialog.dispose();
-            dispose();
-            new AdminDashboard();
+            try {
+                suscripcion.setFechaInicio(fechaInicio);
+                suscripcion.setFechaFin(fechaFin);
+                adminController.actualizarSuscripcion(suscripcion);
+                JOptionPane.showMessageDialog(dialog, "Suscripción actualizada exitosamente", "Éxito",
+                        JOptionPane.INFORMATION_MESSAGE);
+                dialog.dispose();
+                dispose();
+                new AdminDashboard();
+            } catch (IllegalArgumentException ex) {
+                JOptionPane.showMessageDialog(dialog, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
         });
 
         JButton btnCancelar = new JButton("✗ Cancelar");
