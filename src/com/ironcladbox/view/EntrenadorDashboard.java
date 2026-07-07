@@ -20,6 +20,10 @@ public class EntrenadorDashboard extends JFrame {
     public EntrenadorDashboard() {
         authController = AuthController.getInstance();
         entrenadorController = new EntrenadorController();
+        entrenadorController.setOnDataChanged(() -> {
+            dispose();
+            new EntrenadorDashboard().setVisible(true);
+        });
         usuarioActual = authController.getUsuarioActual();
         initializeUI();
     }
@@ -32,6 +36,20 @@ public class EntrenadorDashboard extends JFrame {
 
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBackground(UIStyles.PRIMARY_DARK);
+
+        if (com.ironcladbox.service.ApiService.getInstance().isOffline()) {
+            int pending = com.ironcladbox.service.ApiService.getInstance().getPendingCount();
+            String text = pending > 0
+                ? "  SIN CONEXION - " + pending + " cambios pendientes de sincronizar  "
+                : "  SIN CONEXION - Mostrando datos en cache  ";
+            JLabel offlineLabel = new JLabel(text);
+            offlineLabel.setOpaque(true);
+            offlineLabel.setBackground(new java.awt.Color(200, 120, 0));
+            offlineLabel.setForeground(java.awt.Color.WHITE);
+            offlineLabel.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
+            offlineLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            mainPanel.add(offlineLabel, BorderLayout.NORTH);
+        }
 
         // Header
         JButton logoutButton = new JButton("🚪 Cerrar Sesión");

@@ -2,10 +2,13 @@ package com.ironcladbox.view;
 
 import com.ironcladbox.controller.AuthController;
 import com.ironcladbox.util.UIStyles;
-import com.ironcladbox.dao.IMembresiaDAO;
-import com.ironcladbox.dao.MembresiaDAO;
+import com.ironcladbox.service.MembershipApiService;
+import com.ironcladbox.dto.ApiResponse;
 import com.ironcladbox.model.Atleta;
 import com.ironcladbox.model.Membresia;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 import javax.swing.*;
 import java.awt.*;
@@ -26,13 +29,33 @@ public class RegisterView extends JFrame {
     private JButton backButton;
     private JLabel messageLabel;
     private AuthController authController;
-    private IMembresiaDAO membresiaDAO;
+    private MembershipApiService membershipService;
     private List<Membresia> membresias;
 
     public RegisterView() {
         authController = AuthController.getInstance();
-        membresiaDAO = new MembresiaDAO();
-        membresias = membresiaDAO.obtenerActivas();
+        membershipService = MembershipApiService.getInstance();
+        membresias = new java.util.ArrayList<>();
+        try {
+            ApiResponse resp = membershipService.getAvailable();
+            if (resp.isOk() && resp.data != null && resp.data.isJsonArray()) {
+                JsonArray arr = resp.data.getAsJsonArray();
+                for (JsonElement e : arr) {
+                    if (e.isJsonObject()) {
+                        JsonObject json = e.getAsJsonObject();
+                        Membresia m = new Membresia();
+                        m.setIdMembresia(json.has("id_membresia") ? json.get("id_membresia").getAsInt() : 0);
+                        m.setNombre(json.has("nombre") ? json.get("nombre").getAsString() : "");
+                        m.setPrecio(json.has("precio") ? json.get("precio").getAsDouble() : 0);
+                        m.setDuracionDias(json.has("duracion_dias") ? json.get("duracion_dias").getAsInt() : 30);
+                        m.setActiva(true);
+                        membresias.add(m);
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
         initializeUI();
     }
 

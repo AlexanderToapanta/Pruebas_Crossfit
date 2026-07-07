@@ -2,8 +2,6 @@ package com.ironcladbox.view;
 
 import com.ironcladbox.controller.AtletaController;
 import com.ironcladbox.controller.AuthController;
-import com.ironcladbox.dao.AtletaDAO;
-import com.ironcladbox.dao.IAtletaDAO;
 import com.ironcladbox.model.Atleta;
 import com.ironcladbox.model.Clase;
 import com.ironcladbox.model.Membresia;
@@ -20,16 +18,27 @@ public class AtletaDashboard extends JFrame {
     private Atleta atletaActual;
     private AuthController authController;
     private AtletaController atletaController;
-    private IAtletaDAO atletaDAO;
     private JLabel suscripcionLabel;
     private JLabel imcLabel;
 
     public AtletaDashboard() {
         authController = AuthController.getInstance();
         atletaController = new AtletaController();
-        atletaDAO = new AtletaDAO();
+        atletaController.setOnDataChanged(() -> {
+            dispose();
+            new AtletaDashboard().setVisible(true);
+        });
         usuarioActual = authController.getUsuarioActual();
-        atletaActual = atletaDAO.obtenerPorIdUsuario(usuarioActual.getIdUsuario());
+        if (usuarioActual instanceof Atleta) {
+            atletaActual = (Atleta) usuarioActual;
+        } else {
+            atletaActual = new Atleta();
+            atletaActual.setIdUsuario(usuarioActual.getIdUsuario());
+            atletaActual.setNombre(usuarioActual.getNombre());
+            atletaActual.setApellido(usuarioActual.getApellido());
+            atletaActual.setEmail(usuarioActual.getEmail());
+            atletaActual.setTelefono(usuarioActual.getTelefono());
+        }
         initializeUI();
     }
 
@@ -41,6 +50,20 @@ public class AtletaDashboard extends JFrame {
 
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBackground(UIStyles.PRIMARY_DARK);
+
+        if (com.ironcladbox.service.ApiService.getInstance().isOffline()) {
+            int pending = com.ironcladbox.service.ApiService.getInstance().getPendingCount();
+            String text = pending > 0
+                ? "  SIN CONEXION - " + pending + " cambios pendientes de sincronizar  "
+                : "  SIN CONEXION - Mostrando datos en cache  ";
+            JLabel offlineLabel = new JLabel(text);
+            offlineLabel.setOpaque(true);
+            offlineLabel.setBackground(new java.awt.Color(200, 120, 0));
+            offlineLabel.setForeground(java.awt.Color.WHITE);
+            offlineLabel.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
+            offlineLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            mainPanel.add(offlineLabel, BorderLayout.NORTH);
+        }
 
         // Header
         JButton logoutButton = new JButton("🚪 Cerrar Sesión");

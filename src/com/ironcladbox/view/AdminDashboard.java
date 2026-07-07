@@ -2,12 +2,6 @@ package com.ironcladbox.view;
 
 import com.ironcladbox.controller.AdminController;
 import com.ironcladbox.controller.AuthController;
-import com.ironcladbox.dao.AtletaDAO;
-import com.ironcladbox.dao.EntrenadorDAO;
-import com.ironcladbox.dao.IAtletaDAO;
-import com.ironcladbox.dao.IEntrenadorDAO;
-import com.ironcladbox.dao.IUsuarioDAO;
-import com.ironcladbox.dao.UsuarioDAO;
 import com.ironcladbox.model.Atleta;
 import com.ironcladbox.model.Clase;
 import com.ironcladbox.model.Entrenador;
@@ -16,6 +10,7 @@ import com.ironcladbox.model.Rol;
 import com.ironcladbox.model.Suscripcion;
 import com.ironcladbox.model.Usuario;
 import com.ironcladbox.util.UIStyles;
+import com.google.gson.JsonObject;
 import java.awt.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -126,18 +121,15 @@ public class AdminDashboard extends JFrame {
     private Usuario usuarioActual;
     private AuthController authController;
     private AdminController adminController;
-    private IUsuarioDAO usuarioDAO;
-    private IAtletaDAO atletaDAO;
-    private IEntrenadorDAO entrenadorDAO;
 
     public AdminDashboard() {
         authController = AuthController.getInstance();
         adminController = new AdminController();
+        adminController.setOnDataChanged(() -> {
+            dispose();
+            new AdminDashboard().setVisible(true);
+        });
         usuarioActual = authController.getUsuarioActual();
-
-        usuarioDAO = new UsuarioDAO();
-        atletaDAO = new AtletaDAO();
-        entrenadorDAO = new EntrenadorDAO();
 
         initializeUI();
     }
@@ -150,6 +142,20 @@ public class AdminDashboard extends JFrame {
 
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBackground(UIStyles.PRIMARY_DARK);
+
+        if (com.ironcladbox.service.ApiService.getInstance().isOffline()) {
+            int pending = com.ironcladbox.service.ApiService.getInstance().getPendingCount();
+            String text = pending > 0
+                ? "  SIN CONEXION - " + pending + " cambios pendientes de sincronizar  "
+                : "  SIN CONEXION - Mostrando datos en cache  ";
+            JLabel offlineLabel = new JLabel(text);
+            offlineLabel.setOpaque(true);
+            offlineLabel.setBackground(new java.awt.Color(200, 120, 0));
+            offlineLabel.setForeground(java.awt.Color.WHITE);
+            offlineLabel.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
+            offlineLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            mainPanel.add(offlineLabel, BorderLayout.NORTH);
+        }
 
         // ================= HEADER =================
         JPanel topPanel = new JPanel(new BorderLayout());
@@ -433,23 +439,15 @@ public class AdminDashboard extends JFrame {
                     return;
                 }
 
-                // Crear usuario en la tabla usuarios
-                Usuario nuevoUsuario = new Usuario(email, password, nombre, apellido, telefono, Rol.ATLETA);
-                usuarioDAO.guardar(nuevoUsuario);
-
-                // Crear atleta en la tabla atletas
-                Atleta nuevoAtleta = new Atleta();
-                nuevoAtleta.setIdUsuario(nuevoUsuario.getIdUsuario());
-                nuevoAtleta.setEmail(email);
-                nuevoAtleta.setNombre(nombre);
-                nuevoAtleta.setApellido(apellido);
-                nuevoAtleta.setTelefono(telefono);
-                nuevoAtleta.setPeso(peso);
-                nuevoAtleta.setAltura(altura);
-                nuevoAtleta.setActivo(true);
-                nuevoAtleta.setRol(Rol.ATLETA);
-
-                atletaDAO.guardar(nuevoAtleta);
+                // Crear atleta via API
+                com.ironcladbox.service.AthleteApiService athleteApi = com.ironcladbox.service.AthleteApiService.getInstance();
+                JsonObject body = new JsonObject();
+                body.addProperty("nombre", nombre);
+                body.addProperty("apellido", apellido);
+                body.addProperty("email", email);
+                body.addProperty("fecha_nacimiento", java.time.LocalDate.now().minusYears(20).toString());
+                body.addProperty("telefono", telefono);
+                athleteApi.create(body);
 
                 JOptionPane.showMessageDialog(dialog, "Atleta agregado exitosamente", "Éxito",
                         JOptionPane.INFORMATION_MESSAGE);
@@ -805,24 +803,17 @@ public class AdminDashboard extends JFrame {
                     return;
                 }
 
-                // Crear usuario en la tabla usuarios
-                Usuario nuevoUsuario = new Usuario(email, password, nombre, apellido, telefono, Rol.ENTRENADOR);
-                usuarioDAO.guardar(nuevoUsuario);
-
-                // Crear entrenador en la tabla entrenadores
-                Entrenador nuevoEntrenador = new Entrenador();
-                nuevoEntrenador.setIdUsuario(nuevoUsuario.getIdUsuario());
-                nuevoEntrenador.setEmail(email);
-                nuevoEntrenador.setNombre(nombre);
-                nuevoEntrenador.setApellido(apellido);
-                nuevoEntrenador.setTelefono(telefono);
-                nuevoEntrenador.setCertificacion(certificacion);
-                nuevoEntrenador.setEspecialidad(especialidad);
-                nuevoEntrenador.setExperienciaAnios(experiencia);
-                nuevoEntrenador.setActivo(true);
-                nuevoEntrenador.setRol(Rol.ENTRENADOR);
-
-                entrenadorDAO.guardar(nuevoEntrenador);
+                // Crear entrenador via API
+                com.ironcladbox.service.TrainerApiService trainerApi = com.ironcladbox.service.TrainerApiService.getInstance();
+                JsonObject body = new JsonObject();
+                body.addProperty("nombre", nombre);
+                body.addProperty("apellido", apellido);
+                body.addProperty("email", email);
+                body.addProperty("fecha_nacimiento", java.time.LocalDate.now().minusYears(25).toString());
+                body.addProperty("especialidad", especialidad);
+                body.addProperty("anios_experiencia", experiencia);
+                body.addProperty("certificaciones", certificacion);
+                trainerApi.create(body);
 
                 JOptionPane.showMessageDialog(dialog, "Entrenador agregado exitosamente", "Éxito",
                         JOptionPane.INFORMATION_MESSAGE);

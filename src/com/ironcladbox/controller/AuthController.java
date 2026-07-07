@@ -1,22 +1,24 @@
 package com.ironcladbox.controller;
 
+import com.google.gson.JsonObject;
 import com.ironcladbox.model.Usuario;
 import com.ironcladbox.model.Rol;
 import com.ironcladbox.model.Atleta;
 import com.ironcladbox.model.Entrenador;
-import com.ironcladbox.model.Administrador;
-import com.ironcladbox.dao.IUsuarioDAO;
-import com.ironcladbox.dao.UsuarioDAO;
-import com.ironcladbox.dao.AtletaDAO;
-import com.ironcladbox.dao.EntrenadorDAO;
+import com.ironcladbox.service.ApiService;
+import com.ironcladbox.service.AuthApiService;
+import com.ironcladbox.service.SocketService;
+import com.ironcladbox.dto.ApiResponse;
 
 public class AuthController {
     private static AuthController instance;
     private Usuario usuarioActual;
-    private IUsuarioDAO usuarioDAO;
+    private final AuthApiService authService;
+    private final ApiService apiService;
 
     private AuthController() {
-        this.usuarioDAO = new UsuarioDAO();
+        this.authService = AuthApiService.getInstance();
+        this.apiService = ApiService.getInstance();
     }
 
     public static AuthController getInstance() {
@@ -27,86 +29,87 @@ public class AuthController {
     }
 
     public boolean login(String email, String contrasena) {
-        Usuario usuario = usuarioDAO.autenticar(email, contrasena);
-        if (usuario == null || usuario.getRol() == null) {
-            return false;
-        }
+        try {
+            ApiResponse response = authService.login(email, contrasena);
+            if (!response.isOk() || !response.success) {
+                return false;
+            }
 
-        // Convertir a la instancia específica según el rol
-        this.usuarioActual = convertirAUsuarioEspecifico(usuario);
+            if (response.data != null && response.data.isJsonObject()) {
+                JsonObject data = response.data.getAsJsonObject();
+                if (data.has("token")) {
+                    String token = data.get("token").getAsString();
+                    apiService.setToken(token);
+                    SocketService.getInstance().setToken(token);
+                    SocketService.getInstance().connect();
+                }
 
-        // Validar que usuarioActual tenga un rol válido
-        if (this.usuarioActual != null && this.usuarioActual.getRol() != null) {
-            return true;
+                if (data.has("user")) {
+                    JsonObject userJson = data.getAsJsonObject("user");
+                    String rolStr = userJson.has("rol") ? userJson.get("rol").getAsString() : "";
+                    Rol rol = Rol.fromString(rolStr);
+
+                    Usuario user = new Usuario();
+                    user.setIdUsuario(userJson.has("id_usuario") ? userJson.get("id_usuario").getAsInt() : 0);
+                    user.setEmail(userJson.has("email") ? userJson.get("email").getAsString() : email);
+                    user.setNombre(userJson.has("nombre") ? userJson.get("nombre").getAsString() : "");
+                    user.setApellido(userJson.has("apellido") ? userJson.get("apellido").getAsString() : "");
+                    user.setRol(rol);
+                    user.setActivo(true);
+
+                    if (rol == Rol.ATLETA) {
+                        Atleta atleta = new Atleta();
+                        atleta.setIdUsuario(user.getIdUsuario());
+                        atleta.setEmail(user.getEmail());
+                        atleta.setNombre(user.getNombre());
+                        atleta.setApellido(user.getApellido());
+                        atleta.setRol(Rol.ATLETA);
+                        atleta.setActivo(true);
+                        if (userJson.has("profile")) {
+                            JsonObject profile = userJson.getAsJsonObject("profile");
+                            if (profile.has("id_atleta")) atleta.setIdAtleta(profile.get("id_atleta").getAsInt());
+                        }
+                        this.usuarioActual = atleta;
+                    } else if (rol == Rol.ENTRENADOR) {
+                        Entrenador entrenador = new Entrenador();
+                        entrenador.setIdUsuario(user.getIdUsuario());
+                        entrenador.setEmail(user.getEmail());
+                        entrenador.setNombre(user.getNombre());
+                        entrenador.setApellido(user.getApellido());
+                        entrenador.setRol(Rol.ENTRENADOR);
+                        entrenador.setActivo(true);
+                        if (userJson.has("profile")) {
+                            JsonObject profile = userJson.getAsJsonObject("profile");
+                            if (profile.has("id_entrenador")) entrenador.setIdEntrenador(profile.get("id_entrenador").getAsInt());
+                        }
+                        this.usuarioActual = entrenador;
+                    } else {
+                        user.setRol(rol);
+                        this.usuarioActual = user;
+                    }
+                }
+                return this.usuarioActual != null;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        this.usuarioActual = null;
         return false;
-    }
-
-    private Usuario convertirAUsuarioEspecifico(Usuario usuarioGenerico) {
-        if (usuarioGenerico == null || usuarioGenerico.getRol() == null) {
-            return null; // No continuar si no hay rol
-        }
-        
-        switch (usuarioGenerico.getRol()) {
-            case ENTRENADOR:
-                EntrenadorDAO entrenadorDAO = new EntrenadorDAO();
-                Entrenador entrenador = entrenadorDAO.obtenerPorIdUsuario(usuarioGenerico.getIdUsuario());
-
-                // Si encontramos el entrenador en la tabla, asegurarnos de asignar el rol
-                if (entrenador != null) {
-                    entrenador.setRol(Rol.ENTRENADOR);
-                    return entrenador;
-                }
-
-                // Si no encontramos el entrenador específico en la tabla, crear uno básico
-                entrenador = new Entrenador();
-                entrenador.setIdUsuario(usuarioGenerico.getIdUsuario());
-                entrenador.setEmail(usuarioGenerico.getEmail());
-                entrenador.setContrasena(usuarioGenerico.getContrasena());
-                entrenador.setNombre(usuarioGenerico.getNombre());
-                entrenador.setApellido(usuarioGenerico.getApellido());
-                entrenador.setTelefono(usuarioGenerico.getTelefono());
-                entrenador.setRol(Rol.ENTRENADOR); // Asignar explícitamente el rol
-                entrenador.setActivo(usuarioGenerico.isActivo());
-                return entrenador;
-                
-            case ATLETA:
-                AtletaDAO atletaDAO = new AtletaDAO();
-                Atleta atleta = atletaDAO.obtenerPorIdUsuario(usuarioGenerico.getIdUsuario());
-
-                // Si encontramos el atleta en la tabla, asegurarnos de asignar el rol
-                if (atleta != null) {
-                    atleta.setRol(Rol.ATLETA);
-                    return atleta;
-                }
-
-                // Si no encontramos el atleta específico en la tabla, crear uno básico
-                atleta = new Atleta();
-                atleta.setIdUsuario(usuarioGenerico.getIdUsuario());
-                atleta.setEmail(usuarioGenerico.getEmail());
-                atleta.setContrasena(usuarioGenerico.getContrasena());
-                atleta.setNombre(usuarioGenerico.getNombre());
-                atleta.setApellido(usuarioGenerico.getApellido());
-                atleta.setTelefono(usuarioGenerico.getTelefono());
-                atleta.setRol(Rol.ATLETA); // Asignar explícitamente el rol
-                atleta.setActivo(usuarioGenerico.isActivo());
-                return atleta;
-                
-            case ADMINISTRADOR:
-                // Para administrador, retornar como Usuario genérico pero asegurarse que tenga el rol
-                usuarioGenerico.setRol(Rol.ADMINISTRADOR);
-                return usuarioGenerico;
-                
-            default:
-                return usuarioGenerico;
-        }
     }
 
     public boolean registrarAtleta(Atleta atleta) {
         try {
-            usuarioDAO.guardar(atleta);
-            return true;
+            JsonObject body = new JsonObject();
+            body.addProperty("nombre", atleta.getNombre());
+            body.addProperty("apellido", atleta.getApellido());
+            body.addProperty("email", atleta.getEmail());
+            body.addProperty("password", atleta.getContrasena());
+            body.addProperty("telefono", atleta.getTelefono() != null ? atleta.getTelefono() : "");
+            body.addProperty("rol", "ATLETA");
+            if (atleta.getPeso() > 0) body.addProperty("peso", atleta.getPeso());
+            if (atleta.getAltura() > 0) body.addProperty("altura", atleta.getAltura());
+
+            ApiResponse response = authService.register(body);
+            return response.isOk() && response.success;
         } catch (Exception e) {
             e.printStackTrace();
             return false;
@@ -114,6 +117,13 @@ public class AuthController {
     }
 
     public void logout() {
+        try {
+            authService.logout();
+        } catch (Exception e) {
+            // ignore logout errors
+        }
+        SocketService.getInstance().disconnect();
+        apiService.clearToken();
         usuarioActual = null;
     }
 
@@ -126,7 +136,7 @@ public class AuthController {
     }
 
     public boolean estaAutenticado() {
-        return usuarioActual != null;
+        return usuarioActual != null && apiService.isAuthenticated();
     }
 
     public boolean esAdministrador() {
