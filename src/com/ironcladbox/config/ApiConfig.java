@@ -1,7 +1,7 @@
 package com.ironcladbox.config;
 
 public class ApiConfig {
-    public static final String BASE_URL = "http://192.168.100.75:3000";
+    public static final String BASE_URL = "http://10.40.22.167:3000";
 
     public static final String AUTH_LOGIN = BASE_URL + "/api/auth/login";
     public static final String AUTH_REGISTER = BASE_URL + "/api/auth/register";
