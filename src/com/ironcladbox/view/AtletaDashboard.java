@@ -30,6 +30,7 @@ public class AtletaDashboard extends JFrame {
         authController = AuthController.getInstance();
         atletaController = new AtletaController();
         atletaController.setOnDataChanged(() -> refreshAllTabs());
+        new javax.swing.Timer(15000, e -> refreshAllTabs()).start();
         usuarioActual = authController.getUsuarioActual();
         atletaActual = usuarioActual instanceof Atleta ? (Atleta) usuarioActual : new Atleta();
         if (!(usuarioActual instanceof Atleta)) {

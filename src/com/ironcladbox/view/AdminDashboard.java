@@ -35,6 +35,7 @@ public class AdminDashboard extends JFrame {
         adminController = new AdminController();
         usuarioActual = authController.getUsuarioActual();
         adminController.setOnDataChanged(() -> refreshAllTabs());
+        new javax.swing.Timer(15000, e -> refreshAllTabs()).start();
         initializeUI();
     }
 

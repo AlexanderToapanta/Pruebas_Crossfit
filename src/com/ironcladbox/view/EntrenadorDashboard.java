@@ -31,6 +31,7 @@ public class EntrenadorDashboard extends JFrame {
         authController = AuthController.getInstance();
         entrenadorController = new EntrenadorController();
         entrenadorController.setOnDataChanged(() -> refreshAllTabs());
+        new javax.swing.Timer(15000, e -> refreshAllTabs()).start();
         usuarioActual = authController.getUsuarioActual();
         entrenadorActual = (Entrenador) usuarioActual;
         initializeUI();
