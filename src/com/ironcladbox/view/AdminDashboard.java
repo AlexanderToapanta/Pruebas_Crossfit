@@ -262,7 +262,12 @@ public class AdminDashboard extends JFrame {
                 body.addProperty("altura", alturaField.getText().trim());
                 body.addProperty("direccion", dirField.getText().trim());
                 body.addProperty("contacto_emergencia", emergField.getText().trim());
-                AthleteApiService.getInstance().create(body);
+                ApiResponse resp = AthleteApiService.getInstance().create(body);
+                if (resp != null && resp.isQueued()) {
+                    JOptionPane.showMessageDialog(this, "Sin conexion. El atleta se guardara al reconectar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                } else if (resp == null || !resp.isOk()) {
+                    JOptionPane.showMessageDialog(this, "Error al crear atleta: " + (resp != null ? resp.message : "Sin respuesta"), "Error", JOptionPane.ERROR_MESSAGE);
+                }
                 loadAthletes(model);
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
@@ -289,7 +294,12 @@ public class AdminDashboard extends JFrame {
             body.addProperty("telefono", phoneField.getText().trim());
             body.addProperty("direccion", dirField.getText().trim());
             body.addProperty("contacto_emergencia", emergField.getText().trim());
-            AthleteApiService.getInstance().update(a.getIdAtleta(), body);
+            ApiResponse resp = AthleteApiService.getInstance().update(a.getIdAtleta(), body);
+            if (resp != null && resp.isQueued()) {
+                JOptionPane.showMessageDialog(this, "Sin conexion. Los cambios se guardaran al reconectar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            } else if (resp == null || !resp.isOk()) {
+                JOptionPane.showMessageDialog(this, "Error al actualizar: " + (resp != null ? resp.message : "Sin respuesta"), "Error", JOptionPane.ERROR_MESSAGE);
+            }
             loadAthletes(model);
         }
     }
@@ -407,18 +417,28 @@ public class AdminDashboard extends JFrame {
         JPanel form = createFormPanel(fields);
 
         if (JOptionPane.showConfirmDialog(this, form, "Nuevo Entrenador", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
-            JsonObject body = new JsonObject();
-            body.addProperty("nombre", nameField.getText().trim());
-            body.addProperty("apellido", lastNameField.getText().trim());
-            body.addProperty("email", emailField.getText().trim());
-            body.addProperty("especialidad", specField.getText().trim());
-            body.addProperty("anios_experiencia", Integer.parseInt(expField.getText().trim()));
-            body.addProperty("certificaciones", certField.getText().trim());
-            body.addProperty("biografia", bioField.getText().trim());
-            body.addProperty("fecha_nacimiento", LocalDate.now().minusYears(25).toString());
-            body.addProperty("telefono", phoneField.getText().trim());
-            TrainerApiService.getInstance().create(body);
-            loadTrainers(model);
+            try {
+                JsonObject body = new JsonObject();
+                body.addProperty("nombre", nameField.getText().trim());
+                body.addProperty("apellido", lastNameField.getText().trim());
+                body.addProperty("email", emailField.getText().trim());
+                body.addProperty("especialidad", specField.getText().trim());
+                body.addProperty("anios_experiencia", Integer.parseInt(expField.getText().trim()));
+                body.addProperty("certificaciones", certField.getText().trim());
+                body.addProperty("biografia", bioField.getText().trim());
+                body.addProperty("fecha_nacimiento", LocalDate.now().minusYears(25).toString());
+                body.addProperty("telefono", phoneField.getText().trim());
+                body.addProperty("direccion", "");
+                ApiResponse resp = TrainerApiService.getInstance().create(body);
+                if (resp != null && resp.isQueued()) {
+                    JOptionPane.showMessageDialog(this, "Sin conexion. El entrenador se guardara al reconectar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                } else if (resp == null || !resp.isOk()) {
+                    JOptionPane.showMessageDialog(this, "Error al crear entrenador: " + (resp != null ? resp.message : "Sin respuesta"), "Error", JOptionPane.ERROR_MESSAGE);
+                }
+                loadTrainers(model);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
         }
     }
 
@@ -449,7 +469,10 @@ public class AdminDashboard extends JFrame {
             int row = table.getSelectedRow();
             if (row >= 0 && JOptionPane.showConfirmDialog(this, "Eliminar este WOD?", "Confirmar", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
                 int id = (int) model.getValueAt(row, 0);
-                WodApiService.getInstance().delete(id);
+                ApiResponse resp = WodApiService.getInstance().delete(id);
+                if (resp != null && !resp.isOk()) {
+                    JOptionPane.showMessageDialog(this, "Error al eliminar WOD: " + (resp.message != null ? resp.message : ""), "Error", JOptionPane.ERROR_MESSAGE);
+                }
                 loadWods(model, LocalDate.now().getYear(), monthBox.getSelectedIndex() + 1);
             }
         });
@@ -510,8 +533,15 @@ public class AdminDashboard extends JFrame {
                 h.addProperty("cupo_maximo", 20);
                 horarios.add(h);
                 body.add("horarios", horarios);
-                WodApiService.getInstance().create(body);
-                JOptionPane.showMessageDialog(this, "WOD creado exitosamente!");
+                ApiResponse resp = WodApiService.getInstance().create(body);
+                if (resp != null && resp.isOk()) {
+                    JOptionPane.showMessageDialog(this, "WOD creado exitosamente!");
+                    loadWods(model, LocalDate.now().getYear(), LocalDate.now().getMonthValue());
+                } else if (resp != null && resp.isQueued()) {
+                    JOptionPane.showMessageDialog(this, "Sin conexion. El WOD se guardara al reconectar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                } else {
+                    JOptionPane.showMessageDialog(this, "Error al crear WOD: " + (resp != null ? resp.message : "Sin respuesta"), "Error", JOptionPane.ERROR_MESSAGE);
+                }
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
             }
@@ -546,7 +576,10 @@ public class AdminDashboard extends JFrame {
             int row = table.getSelectedRow();
             if (row >= 0 && JOptionPane.showConfirmDialog(this, "Eliminar membresia?", "Confirmar", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
                 int id = (int) model.getValueAt(row, 0);
-                MembershipApiService.getInstance().delete(id);
+                ApiResponse resp = MembershipApiService.getInstance().delete(id);
+                if (resp != null && !resp.isOk()) {
+                    JOptionPane.showMessageDialog(this, "Error: " + (resp.message != null ? resp.message : "No se pudo eliminar"), "Error", JOptionPane.ERROR_MESSAGE);
+                }
                 loadMemberships(model);
             }
         });
@@ -586,7 +619,10 @@ public class AdminDashboard extends JFrame {
             body.addProperty("descripcion", descField.getText().trim());
             body.addProperty("beneficios", benefitsField.getText().trim());
             body.addProperty("estado", m.isActiva());
-            MembershipApiService.getInstance().update(m.getIdMembresia(), body);
+            ApiResponse resp = MembershipApiService.getInstance().update(m.getIdMembresia(), body);
+            if (resp == null || (!resp.isOk() && !resp.isQueued())) {
+                JOptionPane.showMessageDialog(this, "Error al actualizar: " + (resp != null ? resp.message : "Sin respuesta"), "Error", JOptionPane.ERROR_MESSAGE);
+            }
             loadMemberships(model);
         }
     }
