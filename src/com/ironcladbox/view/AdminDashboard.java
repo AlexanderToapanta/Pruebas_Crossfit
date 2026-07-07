@@ -180,7 +180,7 @@ public class AdminDashboard extends JFrame {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(BG);
 
-        String[] cols = {"ID", "Nombre", "Email", "Telefono"};
+        String[] cols = {"ID", "Nombre", "Email", "Membresia", "Vigencia", "Estado"};
         DefaultTableModel model = new DefaultTableModel(cols, 0) {
             public boolean isCellEditable(int r, int c) { return false; }
         };
@@ -192,21 +192,21 @@ public class AdminDashboard extends JFrame {
         JButton addBtn = actionBtn("+ Agregar Atleta");
         addBtn.addActionListener(e -> showAddAthleteDialog(model));
         JButton editBtn = actionBtn("Editar");
-        editBtn.addActionListener(e -> {
-            int row = table.getSelectedRow();
-            if (row >= 0) showEditAthleteDialog(row, model, table);
-        });
+        editBtn.addActionListener(e -> { int row = table.getSelectedRow(); if (row >= 0) showEditAthleteDialog(row, model, table); });
+        JButton memberBtn = actionBtn("Asignar Membresia");
+        memberBtn.addActionListener(e -> { int row = table.getSelectedRow(); if (row >= 0) showAssignMembershipDialog(table, model, row); });
+        JButton statusBtn = actionBtn("Activar/Desactivar");
+        statusBtn.addActionListener(e -> { int row = table.getSelectedRow(); if (row >= 0) toggleAthleteStatus(table, model, row); });
         JButton delBtn = actionBtn("Eliminar");
         delBtn.setBackground(new Color(180, 40, 40));
         delBtn.addActionListener(e -> {
             int row = table.getSelectedRow();
-            if (row >= 0) {
+            if (row >= 0 && JOptionPane.showConfirmDialog(this, "Eliminar atleta?", "Confirmar", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
                 int id = (int) model.getValueAt(row, 0);
-                if (adminController.eliminarAtleta(id)) {
-                    model.removeRow(row);
-                }
+                if (adminController.eliminarAtleta(id)) { model.removeRow(row); }
             }
         });
+        btnPanel.add(addBtn); btnPanel.add(editBtn); btnPanel.add(memberBtn); btnPanel.add(statusBtn); btnPanel.add(delBtn);
         btnPanel.add(addBtn); btnPanel.add(editBtn); btnPanel.add(delBtn);
 
         panel.add(new JScrollPane(table), BorderLayout.CENTER);
@@ -218,7 +218,10 @@ public class AdminDashboard extends JFrame {
         model.setRowCount(0);
         List<Atleta> list = adminController.obtenerTodosAtletas();
         for (Atleta a : list) {
-            model.addRow(new Object[]{a.getIdAtleta(), a.getNombreCompleto(), a.getEmail(), a.getTelefono()});
+            model.addRow(new Object[]{a.getIdAtleta(), a.getNombreCompleto(), a.getEmail(),
+                a.getNombreMembresia() != null ? a.getNombreMembresia() : "Sin membresia",
+                a.getVigenciaMembresia(),
+                a.isActivo() ? "Activo" : "Inactivo"});
         }
     }
 
@@ -267,12 +270,34 @@ public class AdminDashboard extends JFrame {
         }
     }
 
+    private void showAssignMembershipDialog(JTable table, DefaultTableModel model, int row) {
+        int idAtleta = (int) model.getValueAt(row, 0);
+        List<Membresia> list = adminController.obtenerMembresias();
+        String[] names = list.stream().map(m -> m.getNombre() + " - $" + m.getPrecio() + " / " + m.getDuracionDias() + "d").toArray(String[]::new);
+        JComboBox<String> combo = new JComboBox<>(names);
+        if (JOptionPane.showConfirmDialog(this, combo, "Asignar Membresia", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+            Membresia selected = list.get(combo.getSelectedIndex());
+            if (adminController.asignarMembresia(idAtleta, selected.getIdMembresia())) {
+                loadAthletes(model);
+            }
+        }
+    }
+
+    private void toggleAthleteStatus(JTable table, DefaultTableModel model, int row) {
+        int idAtleta = (int) model.getValueAt(row, 0);
+        String currentStatus = (String) model.getValueAt(row, 5);
+        boolean nuevoEstado = !"Activo".equals(currentStatus);
+        if (adminController.toggleEstadoAtleta(idAtleta, nuevoEstado)) {
+            loadAthletes(model);
+        }
+    }
+
     // ============ TAB: ENTRENADORES ============
     private JPanel createTrainersTab() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(BG);
 
-        String[] cols = {"ID", "Nombre", "Email", "Especialidad", "Exp. (anos)"};
+        String[] cols = {"ID", "Nombre", "Email", "Especialidad", "Exp.", "Estado"};
         DefaultTableModel model = new DefaultTableModel(cols, 0) {
             public boolean isCellEditable(int r, int c) { return false; }
         };
@@ -283,18 +308,20 @@ public class AdminDashboard extends JFrame {
         btnPanel.setBackground(BG);
         JButton addBtn = actionBtn("+ Agregar Entrenador");
         addBtn.addActionListener(e -> showAddTrainerDialog(model));
+        JButton editBtn = actionBtn("Editar");
+        editBtn.addActionListener(e -> { int row = table.getSelectedRow(); if (row >= 0) showEditTrainerDialog(row, model, table); });
+        JButton statusBtn = actionBtn("Activar/Desactivar");
+        statusBtn.addActionListener(e -> { int row = table.getSelectedRow(); if (row >= 0) toggleTrainerStatus(table, model, row); });
         JButton delBtn = actionBtn("Eliminar");
         delBtn.setBackground(new Color(180, 40, 40));
         delBtn.addActionListener(e -> {
             int row = table.getSelectedRow();
-            if (row >= 0) {
+            if (row >= 0 && JOptionPane.showConfirmDialog(this, "Eliminar entrenador?", "Confirmar", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
                 int id = (int) model.getValueAt(row, 0);
-                if (adminController.eliminarEntrenador(id)) {
-                    model.removeRow(row);
-                }
+                if (adminController.eliminarEntrenador(id)) { model.removeRow(row); }
             }
         });
-        btnPanel.add(addBtn); btnPanel.add(delBtn);
+        btnPanel.add(addBtn); btnPanel.add(editBtn); btnPanel.add(statusBtn); btnPanel.add(delBtn);
 
         panel.add(new JScrollPane(table), BorderLayout.CENTER);
         panel.add(btnPanel, BorderLayout.SOUTH);
@@ -305,7 +332,38 @@ public class AdminDashboard extends JFrame {
         model.setRowCount(0);
         for (Entrenador e : adminController.obtenerTodosEntrenadores()) {
             model.addRow(new Object[]{e.getIdEntrenador(), e.getNombreCompleto(), e.getEmail(),
-                e.getEspecialidad() != null ? e.getEspecialidad() : "", e.getExperienciaAnios()});
+                e.getEspecialidad() != null ? e.getEspecialidad() : "", e.getExperienciaAnios(),
+                e.isActivo() ? "Activo" : "Inactivo"});
+        }
+    }
+
+    private void showEditTrainerDialog(int row, DefaultTableModel model, JTable table) {
+        List<Entrenador> list = adminController.obtenerTodosEntrenadores();
+        if (row >= list.size()) return;
+        Entrenador e = list.get(row);
+        JTextField specField = new JTextField(e.getEspecialidad() != null ? e.getEspecialidad() : "");
+        JTextField expField = new JTextField(String.valueOf(e.getExperienciaAnios()));
+        JTextField certField = new JTextField(e.getCertificacion() != null ? e.getCertificacion() : "");
+        JTextField phoneField = new JTextField(e.getTelefono() != null ? e.getTelefono() : "");
+        Object[] fields = {"Especialidad:", specField, "Experiencia:", expField, "Certificaciones:", certField, "Telefono:", phoneField};
+        JPanel form = createFormPanel(fields);
+        if (JOptionPane.showConfirmDialog(this, form, "Editar Entrenador", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+            JsonObject body = new JsonObject();
+            body.addProperty("especialidad", specField.getText().trim());
+            body.addProperty("anios_experiencia", Integer.parseInt(expField.getText().trim()));
+            body.addProperty("certificaciones", certField.getText().trim());
+            TrainerApiService.getInstance().update(e.getIdEntrenador(), body);
+            loadTrainers(model);
+        }
+    }
+
+    private void toggleTrainerStatus(JTable table, DefaultTableModel model, int row) {
+        List<Entrenador> list = adminController.obtenerTodosEntrenadores();
+        if (row >= list.size()) return;
+        int idEntrenador = list.get(row).getIdEntrenador();
+        boolean nuevoEstado = !list.get(row).isActivo();
+        if (adminController.toggleEstadoEntrenador(idEntrenador, nuevoEstado)) {
+            loadTrainers(model);
         }
     }
 
@@ -351,10 +409,21 @@ public class AdminDashboard extends JFrame {
 
         loadBtn.addActionListener(e -> loadWods(model, LocalDate.now().getYear(), monthBox.getSelectedIndex() + 1));
         addBtn.addActionListener(e -> showAddWodDialog(model));
+        JButton delWodBtn = actionBtn("Eliminar WOD");
+        delWodBtn.setBackground(new Color(180, 40, 40));
+        delWodBtn.addActionListener(e -> {
+            int row = table.getSelectedRow();
+            if (row >= 0 && JOptionPane.showConfirmDialog(this, "Eliminar este WOD?", "Confirmar", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+                int id = (int) model.getValueAt(row, 0);
+                WodApiService.getInstance().delete(id);
+                loadWods(model, LocalDate.now().getYear(), monthBox.getSelectedIndex() + 1);
+            }
+        });
         topPanel.add(new JLabel("Mes:"));
         topPanel.add(monthBox);
         topPanel.add(loadBtn);
         topPanel.add(addBtn);
+        topPanel.add(delWodBtn);
 
         panel.add(topPanel, BorderLayout.NORTH);
         panel.add(new JScrollPane(table), BorderLayout.CENTER);
@@ -389,7 +458,7 @@ public class AdminDashboard extends JFrame {
         JTextField dateField = new JTextField(LocalDate.now().toString());
         JTextField descField = new JTextField();
         JComboBox<String> typeBox = new JComboBox<>(new String[]{"AMRAP","FOR TIME","EMOM","TABATA","STRENGTH","CHIPPER","HERO","BENCHMARK"});
-        JComboBox<String> levelBox = new JComboBox<>(new String[]{"Principiante","Intermedio","Avanzado","RX","Todos"});
+        JComboBox<String> levelBox = new JComboBox<>(new String[]{"Principiante","Intermedio","Avanzado","RX","Scaled"});
         Object[] fields = {"Titulo:", titleField, "Fecha:", dateField, "Descripcion:", descField, "Tipo:", typeBox, "Nivel:", levelBox};
         JPanel form = createFormPanel(fields);
 
@@ -420,7 +489,7 @@ public class AdminDashboard extends JFrame {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(BG);
 
-        String[] cols = {"ID", "Nombre", "Precio", "Duracion (dias)", "Activa"};
+        String[] cols = {"ID", "Nombre", "Precio", "Duracion", "Descripcion", "Beneficios", "Activa"};
         DefaultTableModel model = new DefaultTableModel(cols, 0) {
             public boolean isCellEditable(int r, int c) { return false; }
         };
@@ -431,18 +500,22 @@ public class AdminDashboard extends JFrame {
         btnPanel.setBackground(BG);
         JButton addBtn = actionBtn("+ Nueva Membresia");
         addBtn.addActionListener(e -> showAddMembershipDialog(model));
+        JButton editBtn = actionBtn("Editar");
+        editBtn.addActionListener(e -> {
+            int row = table.getSelectedRow();
+            if (row >= 0) showEditMembershipDialog(row, model, table);
+        });
         JButton delBtn = actionBtn("Eliminar");
         delBtn.setBackground(new Color(180, 40, 40));
         delBtn.addActionListener(e -> {
             int row = table.getSelectedRow();
-            if (row >= 0) {
+            if (row >= 0 && JOptionPane.showConfirmDialog(this, "Eliminar membresia?", "Confirmar", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
                 int id = (int) model.getValueAt(row, 0);
-                adminController.obtenerMembresias().stream().filter(m -> m.getIdMembresia() == id).findFirst()
-                    .ifPresent(m -> adminController.actualizarMembresia(new Membresia(m.getNombre(), m.getDescripcion(), m.getPrecio(), m.getDuracionDias(), m.getBeneficios()) {{ setIdMembresia(id); }}));
+                MembershipApiService.getInstance().delete(id);
                 loadMemberships(model);
             }
         });
-        btnPanel.add(addBtn); btnPanel.add(delBtn);
+        btnPanel.add(addBtn); btnPanel.add(editBtn); btnPanel.add(delBtn);
 
         panel.add(new JScrollPane(table), BorderLayout.CENTER);
         panel.add(btnPanel, BorderLayout.SOUTH);
@@ -452,7 +525,34 @@ public class AdminDashboard extends JFrame {
     private void loadMemberships(DefaultTableModel model) {
         model.setRowCount(0);
         for (Membresia m : adminController.obtenerMembresias()) {
-            model.addRow(new Object[]{m.getIdMembresia(), m.getNombre(), "$" + m.getPrecio(), m.getDuracionDias(), m.isActiva() ? "Si" : "No"});
+            model.addRow(new Object[]{m.getIdMembresia(), m.getNombre(), "$" + m.getPrecio(), m.getDuracionDias() + "d",
+                m.getDescripcion() != null ? (m.getDescripcion().length() > 30 ? m.getDescripcion().substring(0, 30) + "..." : m.getDescripcion()) : "",
+                m.getBeneficios() != null ? (m.getBeneficios().length() > 40 ? m.getBeneficios().substring(0, 40) + "..." : m.getBeneficios()) : "",
+                m.isActiva() ? "Si" : "No"});
+        }
+    }
+
+    private void showEditMembershipDialog(int row, DefaultTableModel model, JTable table) {
+        List<Membresia> list = adminController.obtenerMembresias();
+        if (row >= list.size()) return;
+        Membresia m = list.get(row);
+        JTextField nameField = new JTextField(m.getNombre());
+        JTextField priceField = new JTextField(String.valueOf(m.getPrecio()));
+        JTextField daysField = new JTextField(String.valueOf(m.getDuracionDias()));
+        JTextField descField = new JTextField(m.getDescripcion() != null ? m.getDescripcion() : "");
+        JTextField benefitsField = new JTextField(m.getBeneficios() != null ? m.getBeneficios() : "");
+        Object[] fields = {"Nombre:", nameField, "Precio:", priceField, "Duracion (dias):", daysField, "Descripcion:", descField, "Beneficios:", benefitsField};
+        JPanel form = createFormPanel(fields);
+        if (JOptionPane.showConfirmDialog(this, form, "Editar Membresia", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+            JsonObject body = new JsonObject();
+            body.addProperty("nombre", nameField.getText().trim());
+            body.addProperty("precio", Double.parseDouble(priceField.getText().trim()));
+            body.addProperty("duracion_dias", Integer.parseInt(daysField.getText().trim()));
+            body.addProperty("descripcion", descField.getText().trim());
+            body.addProperty("beneficios", benefitsField.getText().trim());
+            body.addProperty("estado", m.isActiva());
+            MembershipApiService.getInstance().update(m.getIdMembresia(), body);
+            loadMemberships(model);
         }
     }
 

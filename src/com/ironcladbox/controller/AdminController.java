@@ -271,7 +271,33 @@ public class AdminController {
         a.setActivo(json.has("estado") && !json.get("estado").isJsonNull() ? json.get("estado").getAsBoolean() : true);
         if (json.has("peso") && !json.get("peso").isJsonNull()) a.setPeso(json.get("peso").getAsDouble());
         if (json.has("altura") && !json.get("altura").isJsonNull()) a.setAltura(json.get("altura").getAsDouble());
+        a.setIdMembresia(json.has("id_membresia") && !json.get("id_membresia").isJsonNull() ? json.get("id_membresia").getAsInt() : 0);
+        a.setNombreMembresia(json.has("nombre_membresia") && !json.get("nombre_membresia").isJsonNull() ? json.get("nombre_membresia").getAsString() : null);
+        a.setMembresiaActiva(json.has("membresia_activa") && !json.get("membresia_activa").isJsonNull() ? json.get("membresia_activa").getAsBoolean() : false);
+        if (json.has("fecha_inicio_membresia") && !json.get("fecha_inicio_membresia").isJsonNull()) {
+            try { a.setFechaInicioMembresia(LocalDate.parse(json.get("fecha_inicio_membresia").getAsString())); } catch (Exception ignored) {}
+        }
+        if (json.has("fecha_fin_membresia") && !json.get("fecha_fin_membresia").isJsonNull()) {
+            try { a.setFechaFinMembresia(LocalDate.parse(json.get("fecha_fin_membresia").getAsString())); } catch (Exception ignored) {}
+        }
         return a;
+    }
+
+    public boolean toggleEstadoAtleta(int idAtleta, boolean activo) {
+        JsonObject body = new JsonObject();
+        body.addProperty("activo", activo);
+        ApiResponse resp = athleteService.updateStatus(idAtleta, activo);
+        return resp.isOk();
+    }
+
+    public boolean toggleEstadoEntrenador(int idEntrenador, boolean activo) {
+        ApiResponse resp = trainerService.updateStatus(idEntrenador, activo);
+        return resp.isOk();
+    }
+
+    public boolean asignarMembresia(int idAtleta, int idMembresia) {
+        ApiResponse resp = membershipService.assign(idAtleta, idMembresia);
+        return resp.isOk();
     }
 
     private Entrenador parseEntrenador(JsonObject json) {
