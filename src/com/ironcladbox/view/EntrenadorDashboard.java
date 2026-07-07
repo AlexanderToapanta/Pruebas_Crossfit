@@ -61,6 +61,8 @@ public class EntrenadorDashboard extends JFrame {
         tabbedPane.addTab("Inicio", createHomeTab());
         tabbedPane.addTab("Mis Clases", createClassesTab());
         tabbedPane.addTab("WODs", createWodsTab());
+        tabbedPane.addTab("Mis Atletas", createMyAthletesTab());
+        tabbedPane.addTab("Ejercicios", createExercisesTab());
         tabbedPane.addTab("Mi Perfil", createProfileTab());
 
         JPanel footer = new JPanel(new BorderLayout());
@@ -159,6 +161,44 @@ public class EntrenadorDashboard extends JFrame {
                 }
             }
         } catch (Exception ex) {}
+    }
+
+    private JPanel createMyAthletesTab() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(BG);
+        String[] cols = {"ID", "Nombre", "Email"};
+        DefaultTableModel model = new DefaultTableModel(cols, 0) { public boolean isCellEditable(int r, int c) { return false; } };
+        try {
+            ApiResponse resp = TrainerApiService.getInstance().getMyAthletes();
+            if (resp.isOk() && resp.data != null && resp.data.isJsonArray()) {
+                for (JsonElement e : resp.data.getAsJsonArray()) {
+                    JsonObject a = e.getAsJsonObject();
+                    model.addRow(new Object[]{a.has("id_atleta")?a.get("id_atleta").getAsInt():0, (a.has("nombre")?a.get("nombre").getAsString():"")+" "+(a.has("apellido")?a.get("apellido").getAsString():""), a.has("email")?a.get("email").getAsString():""});
+                }
+            }
+        } catch (Exception ex) {}
+        JTable table = styledTable(model);
+        panel.add(new JScrollPane(table), BorderLayout.CENTER);
+        return panel;
+    }
+
+    private JPanel createExercisesTab() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(BG);
+        String[] cols = {"ID", "Nombre", "Descripcion"};
+        DefaultTableModel model = new DefaultTableModel(cols, 0) { public boolean isCellEditable(int r, int c) { return false; } };
+        try {
+            ApiResponse resp = ExerciseApiService.getInstance().getAll();
+            if (resp.isOk() && resp.data != null && resp.data.isJsonArray()) {
+                for (JsonElement e : resp.data.getAsJsonArray()) {
+                    JsonObject ex = e.getAsJsonObject();
+                    model.addRow(new Object[]{ex.has("id_ejercicio")?ex.get("id_ejercicio").getAsInt():0, ex.has("nombre")?ex.get("nombre").getAsString():"", ex.has("descripcion")?ex.get("descripcion").getAsString():""});
+                }
+            }
+        } catch (Exception ex) {}
+        JTable table = styledTable(model);
+        panel.add(new JScrollPane(table), BorderLayout.CENTER);
+        return panel;
     }
 
     private JPanel createProfileTab() {

@@ -71,6 +71,7 @@ public class AdminDashboard extends JFrame {
         tabbedPane.addTab("Membresias", createMembershipsTab());
         tabbedPane.addTab("Ejercicios", createExercisesTab());
         tabbedPane.addTab("Clases", createClassesTab());
+        tabbedPane.addTab("Mi Perfil", createProfileTab());
 
         JPanel header = new JPanel(new BorderLayout());
         header.setBackground(DARK);
@@ -586,6 +587,22 @@ public class AdminDashboard extends JFrame {
         }
     }
 
+    // ============ TAB: MI PERFIL ============
+    private JPanel createProfileTab() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(BG);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(12, 30, 12, 30);
+        gbc.anchor = GridBagConstraints.WEST;
+
+        addPRow(panel, "Nombre:", usuarioActual.getNombre(), 0, gbc);
+        addPRow(panel, "Apellido:", usuarioActual.getApellido(), 1, gbc);
+        addPRow(panel, "Email:", usuarioActual.getEmail(), 2, gbc);
+        addPRow(panel, "Rol:", "ADMINISTRADOR", 3, gbc);
+
+        return panel;
+    }
+
     // ============ UTILIDADES ============
     private JTable styledTable(DefaultTableModel model) {
         JTable table = new JTable(model);
@@ -634,6 +651,13 @@ public class AdminDashboard extends JFrame {
             }
         }
         return panel;
+    }
+
+    private void addPRow(JPanel p, String label, String val, int row, GridBagConstraints gbc) {
+        JLabel l = new JLabel(label); l.setForeground(RED); l.setFont(new Font("Arial", Font.BOLD, 12));
+        gbc.gridx = 0; gbc.gridy = row; p.add(l, gbc);
+        JLabel v = new JLabel(val); v.setForeground(Color.WHITE); v.setFont(new Font("Arial", Font.PLAIN, 12));
+        gbc.gridx = 1; p.add(v, gbc);
     }
 
     private void logout() {

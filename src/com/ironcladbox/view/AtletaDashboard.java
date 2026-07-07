@@ -17,6 +17,7 @@ public class AtletaDashboard extends JFrame {
     private Atleta atletaActual;
     private AuthController authController;
     private AtletaController atletaController;
+    private JTabbedPane tabbedPane;
 
     private static final Color BG = new Color(0x11, 0x11, 0x13);
     private static final Color CARD_BG = new Color(0x1C, 0x1C, 0x1E);
@@ -56,13 +57,17 @@ public class AtletaDashboard extends JFrame {
             mainPanel.add(off, BorderLayout.NORTH);
         }
 
-        JTabbedPane tabbedPane = new JTabbedPane();
-        tabbedPane.setBackground(BG); tabbedPane.setForeground(Color.WHITE);
-        tabbedPane.setFont(new Font("Arial", Font.BOLD, 12));
-        tabbedPane.addTab("Mi Perfil", createProfileTab());
-        tabbedPane.addTab("Clases", createClassesTab());
-        tabbedPane.addTab("Membresia", createMembershipTab());
-        tabbedPane.addTab("Ejercicios", createExercisesTab());
+        JTabbedPane tp = new JTabbedPane();
+        tp.setBackground(BG); tp.setForeground(Color.WHITE);
+        tp.setFont(new Font("Arial", Font.BOLD, 12));
+        tp.addTab("Inicio", createHomeTab());
+        tp.addTab("Mi Perfil", createProfileTab());
+        tp.addTab("Clases", createClassesTab());
+        tp.addTab("WODs", createWodsTab());
+        tp.addTab("Membresia", createMembershipTab());
+        tp.addTab("Progreso", createProgressTab());
+        tp.addTab("Ejercicios", createExercisesTab());
+        this.tabbedPane = tp;
 
         JPanel footer = new JPanel(new BorderLayout());
         footer.setBackground(DARK);
@@ -80,6 +85,74 @@ public class AtletaDashboard extends JFrame {
         mainPanel.add(footer, BorderLayout.SOUTH);
         add(mainPanel);
         setVisible(true);
+    }
+
+    private JPanel createHomeTab() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(BG);
+        JLabel welcome = new JLabel("Bienvenido, " + usuarioActual.getNombreCompleto(), SwingConstants.CENTER);
+        welcome.setFont(new Font("Arial", Font.BOLD, 22));
+        welcome.setForeground(Color.WHITE);
+        panel.add(welcome);
+
+        JPanel bottom = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        bottom.setBackground(BG);
+        JButton viewClassesBtn = new JButton("Ver Clases Disponibles");
+        viewClassesBtn.setBackground(RED); viewClassesBtn.setForeground(Color.WHITE);
+        viewClassesBtn.addActionListener(e -> tabbedPane.setSelectedIndex(2));
+        bottom.add(viewClassesBtn);
+
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setBackground(BG);
+        wrapper.add(panel, BorderLayout.CENTER);
+        wrapper.add(bottom, BorderLayout.SOUTH);
+        return wrapper;
+    }
+
+    private JPanel createWodsTab() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(BG);
+        String[] cols = {"ID", "Titulo", "Fecha", "Tipo", "Nivel"};
+        DefaultTableModel model = new DefaultTableModel(cols, 0) { public boolean isCellEditable(int r, int c) { return false; } };
+        try {
+            ApiResponse resp = WodApiService.getInstance().getByMonth(LocalDate.now().getYear(), LocalDate.now().getMonthValue());
+            if (resp.isOk() && resp.data != null && resp.data.isJsonArray()) {
+                for (JsonElement e : resp.data.getAsJsonArray()) {
+                    JsonObject w = e.getAsJsonObject();
+                    model.addRow(new Object[]{w.has("id_wod")?w.get("id_wod").getAsInt():0, w.has("titulo")?w.get("titulo").getAsString():"", w.has("fecha")?w.get("fecha").getAsString():"", w.has("tipo")?w.get("tipo").getAsString():"", w.has("nivel")?w.get("nivel").getAsString():""});
+                }
+            }
+        } catch (Exception ex) {}
+        JTable table = styledTable(model);
+        panel.add(new JScrollPane(table), BorderLayout.CENTER);
+        return panel;
+    }
+
+    private JPanel createProgressTab() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(BG);
+        String[] cols = {"Ejercicio", "Marca Maxima"};
+        DefaultTableModel model = new DefaultTableModel(cols, 0) { public boolean isCellEditable(int r, int c) { return false; } };
+        try {
+            ProgressApiService ps = ProgressApiService.getInstance();
+            ApiResponse resp = ps.getEjerciciosConProgreso();
+            if (resp.isOk() && resp.data != null && resp.data.isJsonArray()) {
+                for (JsonElement e : resp.data.getAsJsonArray()) {
+                    JsonObject p = e.getAsJsonObject();
+                    model.addRow(new Object[]{p.has("nombre")?p.get("nombre").getAsString():"", p.has("marca_maxima")?p.get("marca_maxima").getAsDouble()+" lb":""});
+                }
+            }
+        } catch (Exception ex) {}
+        JTable table = styledTable(model);
+        panel.add(new JScrollPane(table), BorderLayout.CENTER);
+
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        btnPanel.setBackground(BG);
+        JButton refreshBtn = new JButton("Actualizar Progreso");
+        refreshBtn.setBackground(RED); refreshBtn.setForeground(Color.WHITE);
+        btnPanel.add(refreshBtn);
+        panel.add(btnPanel, BorderLayout.SOUTH);
+        return panel;
     }
 
     private JPanel createProfileTab() {
