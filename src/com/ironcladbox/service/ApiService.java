@@ -22,6 +22,7 @@ public class ApiService {
     private ApiService() {
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(120))
+                .version(java.net.http.HttpClient.Version.HTTP_1_1)
                 .build();
         this.gson = new Gson();
         this.cacheService = CacheService.getInstance();
