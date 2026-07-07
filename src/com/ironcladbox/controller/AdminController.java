@@ -246,6 +246,7 @@ public class AdminController {
         body.addProperty("especialidad", entrenador.getEspecialidad() != null ? entrenador.getEspecialidad() : "");
         body.addProperty("anios_experiencia", entrenador.getExperienciaAnios());
         body.addProperty("certificaciones", entrenador.getCertificacion() != null ? entrenador.getCertificacion() : "");
+        body.addProperty("biografia", entrenador.getBiografia() != null ? entrenador.getBiografia() : "");
         ApiResponse resp = trainerService.update(entrenador.getIdEntrenador(), body);
         if (resp != null && resp.isQueued()) {
             System.out.println("actualizarEntrenador: encolado sin conexion");

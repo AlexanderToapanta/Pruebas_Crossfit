@@ -8,6 +8,7 @@ public class Entrenador extends Usuario {
     private String especialidad;
     private int experienciaAnios;
     private LocalDateTime fechaContratacion;
+    private String biografia;
 
     public Entrenador() {
         super();
@@ -56,6 +57,14 @@ public class Entrenador extends Usuario {
 
     public void setFechaContratacion(LocalDateTime fechaContratacion) {
         this.fechaContratacion = fechaContratacion;
+    }
+
+    public String getBiografia() {
+        return biografia;
+    }
+
+    public void setBiografia(String biografia) {
+        this.biografia = biografia;
     }
 
     @Override

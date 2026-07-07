@@ -364,12 +364,11 @@ public class AdminDashboard extends JFrame {
         Object[] fields = {"Especialidad:", specField, "Experiencia:", expField, "Certificaciones:", certField, "Telefono:", phoneField, "Biografia:", bioField};
         JPanel form = createFormPanel(fields);
         if (JOptionPane.showConfirmDialog(this, form, "Editar Entrenador", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
-            JsonObject body = new JsonObject();
-            body.addProperty("especialidad", specField.getText().trim());
-            body.addProperty("anios_experiencia", Integer.parseInt(expField.getText().trim()));
-            body.addProperty("certificaciones", certField.getText().trim());
-            body.addProperty("biografia", bioField.getText().trim());
-            TrainerApiService.getInstance().update(e.getIdEntrenador(), body);
+            e.setEspecialidad(specField.getText().trim());
+            e.setExperienciaAnios(Integer.parseInt(expField.getText().trim()));
+            e.setCertificacion(certField.getText().trim());
+            e.setBiografia(bioField.getText().trim());
+            adminController.actualizarEntrenador(e);
             loadTrainers(model);
         }
     }
