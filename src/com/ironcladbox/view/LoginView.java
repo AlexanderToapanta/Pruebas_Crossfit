@@ -155,6 +155,17 @@ public class LoginView extends JFrame {
         gbc.insets = new Insets(5, 30, 20, 30);
         mainPanel.add(registerButton, gbc);
 
+        // Volver al Inicio
+        JButton backBtn = new JButton("Volver al Inicio");
+        backBtn.setFont(new Font("Montserrat", Font.PLAIN, 12));
+        backBtn.setForeground(Color.GRAY);
+        backBtn.setBorder(null);
+        backBtn.setContentAreaFilled(false);
+        backBtn.addActionListener(e -> { dispose(); new LandingView(); });
+        gbc.gridy = 10;
+        gbc.insets = new Insets(0, 30, 20, 30);
+        mainPanel.add(backBtn, gbc);
+
         add(mainPanel);
         setVisible(true);
     }
