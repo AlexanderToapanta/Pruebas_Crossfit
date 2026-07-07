@@ -2,11 +2,12 @@ package com.ironcladbox.view;
 
 import com.ironcladbox.controller.AuthController;
 import com.ironcladbox.controller.EntrenadorController;
-import com.ironcladbox.model.Clase;
-import com.ironcladbox.model.Entrenador;
-import com.ironcladbox.model.Usuario;
-import com.ironcladbox.util.UIStyles;
+import com.ironcladbox.model.*;
+import com.ironcladbox.service.*;
+import com.ironcladbox.dto.ApiResponse;
+import com.google.gson.*;
 import java.awt.*;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import javax.swing.*;
@@ -14,336 +15,217 @@ import javax.swing.table.DefaultTableModel;
 
 public class EntrenadorDashboard extends JFrame {
     private Usuario usuarioActual;
+    private Entrenador entrenadorActual;
     private AuthController authController;
     private EntrenadorController entrenadorController;
+    private JTabbedPane tabbedPane;
+
+    private static final Color BG = new Color(0x11, 0x11, 0x13);
+    private static final Color CARD_BG = new Color(0x1C, 0x1C, 0x1E);
+    private static final Color RED = new Color(0xFF, 0x3B, 0x30);
+    private static final Color GRAY = new Color(0xB0, 0xB0, 0xB5);
+    private static final Color DARK = new Color(0x0A, 0x0A, 0x0C);
 
     public EntrenadorDashboard() {
         authController = AuthController.getInstance();
         entrenadorController = new EntrenadorController();
-        entrenadorController.setOnDataChanged(() -> {
-            dispose();
-            new EntrenadorDashboard().setVisible(true);
-        });
+        entrenadorController.setOnDataChanged(() -> { dispose(); new EntrenadorDashboard().setVisible(true); });
         usuarioActual = authController.getUsuarioActual();
+        entrenadorActual = (Entrenador) usuarioActual;
         initializeUI();
     }
 
     private void initializeUI() {
-        setTitle("IroncladBox CrossFit - Dashboard Entrenador");
+        setTitle("IroncladBox - Dashboard Entrenador");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1050, 750);
+        setSize(1050, 700);
         setLocationRelativeTo(null);
 
         JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.setBackground(UIStyles.PRIMARY_DARK);
+        mainPanel.setBackground(BG);
 
-        if (com.ironcladbox.service.ApiService.getInstance().isOffline()) {
-            int pending = com.ironcladbox.service.ApiService.getInstance().getPendingCount();
-            String text = pending > 0
-                ? "  SIN CONEXION - " + pending + " cambios pendientes de sincronizar  "
-                : "  SIN CONEXION - Mostrando datos en cache  ";
-            JLabel offlineLabel = new JLabel(text);
+        if (ApiService.getInstance().isOffline()) {
+            int pending = ApiService.getInstance().getPendingCount();
+            JLabel offlineLabel = new JLabel(pending > 0 ? "  SIN CONEXION - " + pending + " cambios pendientes" : "  SIN CONEXION - Datos en cache", SwingConstants.CENTER);
             offlineLabel.setOpaque(true);
-            offlineLabel.setBackground(new java.awt.Color(200, 120, 0));
-            offlineLabel.setForeground(java.awt.Color.WHITE);
-            offlineLabel.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
-            offlineLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            offlineLabel.setBackground(new Color(200, 120, 0));
+            offlineLabel.setForeground(Color.WHITE);
+            offlineLabel.setFont(new Font("Arial", Font.BOLD, 12));
             mainPanel.add(offlineLabel, BorderLayout.NORTH);
         }
 
-        // Header
-        JButton logoutButton = new JButton("🚪 Cerrar Sesión");
-        UIStyles.styleDangerButton(logoutButton);
-        logoutButton.addActionListener(e -> logout());
+        tabbedPane = new JTabbedPane();
+        tabbedPane.setBackground(BG);
+        tabbedPane.setForeground(Color.WHITE);
+        tabbedPane.setFont(new Font("Arial", Font.BOLD, 12));
+        tabbedPane.addTab("Inicio", createHomeTab());
+        tabbedPane.addTab("Mis Clases", createClassesTab());
+        tabbedPane.addTab("WODs", createWodsTab());
+        tabbedPane.addTab("Mi Perfil", createProfileTab());
 
-        JPanel headerPanel = UIStyles.createHeaderPanel("🏋️ ENTRENADOR - " + usuarioActual.getNombreCompleto(),
-                logoutButton);
-        mainPanel.add(headerPanel, BorderLayout.NORTH);
-
-        // Content Panel
-        JTabbedPane tabbedPane = new JTabbedPane();
-        tabbedPane.setBackground(UIStyles.PRIMARY_DARK);
-        tabbedPane.setForeground(UIStyles.ACCENT_RED);
-
-        // Panel de clases que se recargará dinámicamente
-        JPanel classesPanel = new JPanel(new BorderLayout());
-        classesPanel.setBackground(UIStyles.PRIMARY_DARK);
-
-        tabbedPane.addTab("📚 Mis Clases", classesPanel);
-        tabbedPane.addTab("👤 Mi Perfil", createProfileTab());
-
-        // Listener para recargar clases cuando se abre la pestaña
-        tabbedPane.addChangeListener(e -> {
-            if (tabbedPane.getSelectedIndex() == 0) {
-                classesPanel.removeAll();
-                classesPanel.add(createClassesTab(), BorderLayout.CENTER);
-                classesPanel.revalidate();
-                classesPanel.repaint();
-            }
-        });
-
-        // Cargar las clases la primera vez
-        classesPanel.add(createClassesTab(), BorderLayout.CENTER);
+        JPanel footer = new JPanel(new BorderLayout());
+        footer.setBackground(DARK);
+        footer.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, RED));
+        JLabel userLabel = new JLabel("  Entrenador: " + usuarioActual.getNombreCompleto());
+        userLabel.setForeground(Color.WHITE);
+        userLabel.setFont(new Font("Arial", Font.PLAIN, 11));
+        footer.add(userLabel, BorderLayout.WEST);
+        JButton logoutBtn = new JButton("Cerrar Sesion");
+        logoutBtn.setBackground(RED);
+        logoutBtn.setForeground(Color.WHITE);
+        logoutBtn.setFont(new Font("Arial", Font.BOLD, 10));
+        logoutBtn.addActionListener(e -> { authController.logout(); dispose(); new LoginView(); });
+        footer.add(logoutBtn, BorderLayout.EAST);
 
         mainPanel.add(tabbedPane, BorderLayout.CENTER);
-
+        mainPanel.add(footer, BorderLayout.SOUTH);
         add(mainPanel);
         setVisible(true);
     }
 
+    private JPanel createHomeTab() { return sectionPanel("Bienvenido, " + usuarioActual.getNombreCompleto(), "Entrenador de IroncladBox"); }
+
     private JPanel createClassesTab() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(UIStyles.PRIMARY_DARK);
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        panel.setBackground(BG);
+        String[] cols = {"ID", "Nombre", "Dia", "Horario", "Capacidad", "Estado"};
+        DefaultTableModel model = new DefaultTableModel(cols, 0) { public boolean isCellEditable(int r, int c) { return false; } };
+        JTable table = styledTable(model);
+        loadClasses(model);
 
-        String[] columnas = { "ID", "Nombre", "Día", "Horario", "Capacidad", "Estado" };
-        DefaultTableModel modelo = new DefaultTableModel(columnas, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-        };
-
-        // Cargar las clases actuales del entrenador
-        Entrenador entrenadorActual = (Entrenador) usuarioActual;
-        List<Clase> clases = entrenadorController.obtenerMisClases(entrenadorActual.getIdEntrenador());
-        for (Clase clase : clases) {
-            modelo.addRow(new Object[] {
-                    clase.getIdClase(),
-                    clase.getNombre(),
-                    clase.getDiaSemana(),
-                    clase.getHorarioInicio() + " - " + clase.getHorarioFin(),
-                    clase.getCapacidadMaxima(),
-                    clase.isActiva() ? "✓ Activa" : "✗ Inactiva"
-            });
-        }
-
-        JTable clasesTable = new JTable(modelo);
-        UIStyles.styleTable(clasesTable);
-
-        JScrollPane scrollPane = new JScrollPane(clasesTable);
-        scrollPane.setBackground(UIStyles.PRIMARY_DARK);
-        scrollPane.getViewport().setBackground(UIStyles.PRIMARY_DARK);
-        panel.add(scrollPane, BorderLayout.CENTER);
-
-        JPanel bottomPanel = new JPanel();
-        bottomPanel.setBackground(UIStyles.PRIMARY_DARK);
-        bottomPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        bottomPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 15, 10));
-
-        JButton attendanceButton = new JButton("📋 Registrar Asistencia");
-        UIStyles.stylePrimaryButton(attendanceButton);
-        attendanceButton.addActionListener(e -> {
-            if (clasesTable.getSelectedRow() >= 0) {
-                int idClase = (int) modelo.getValueAt(clasesTable.getSelectedRow(), 0);
-                registrarAsistencia(idClase);
-            } else {
-                JOptionPane.showMessageDialog(this, "Selecciona una clase de la tabla", "Información",
-                        JOptionPane.INFORMATION_MESSAGE);
-            }
-        });
-        bottomPanel.add(attendanceButton);
-
-        JButton newClassButton = new JButton("➕ Nueva Clase");
-        UIStyles.styleSuccessButton(newClassButton);
-        newClassButton.addActionListener(e -> nuevaClase());
-        bottomPanel.add(newClassButton);
-
-        panel.add(bottomPanel, BorderLayout.SOUTH);
-
+        JPanel btns = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        btns.setBackground(BG);
+        JButton addBtn = actionBtn("+ Nueva Clase");
+        addBtn.addActionListener(e -> { showAddClassDialog(); loadClasses(model); });
+        btns.add(addBtn);
+        panel.add(new JScrollPane(table), BorderLayout.CENTER);
+        panel.add(btns, BorderLayout.SOUTH);
         return panel;
     }
 
-    private void registrarAsistencia(int idClase) {
-        JOptionPane.showMessageDialog(this, "Registro de asistencia para clase " + idClase + " en desarrollo",
-                "Información", JOptionPane.INFORMATION_MESSAGE);
+    private void loadClasses(DefaultTableModel model) {
+        model.setRowCount(0);
+        for (Clase c : entrenadorController.obtenerMisClases(entrenadorActual.getIdEntrenador())) {
+            model.addRow(new Object[]{c.getIdClase(), c.getNombre(), c.getDiaSemana(), c.getHorarioInicio() + "-" + c.getHorarioFin(), c.getCapacidadMaxima(), c.isActiva() ? "ACTIVA" : "CANCELADA"});
+        }
     }
 
-    private void nuevaClase() {
-        JDialog dialog = new JDialog(this, "Nueva Clase", true);
-        dialog.setSize(560, 560);
-        dialog.setLocationRelativeTo(this);
-        dialog.getContentPane().setBackground(UIStyles.PRIMARY_DARK);
-
-        JPanel formPanel = new JPanel(new GridBagLayout());
-        formPanel.setBackground(UIStyles.PRIMARY_DARK);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.weightx = 1.0;
-
-        JLabel lblNombre = new JLabel("Nombre:");
-        lblNombre.setForeground(UIStyles.ACCENT_RED);
-        JTextField txtNombre = new JTextField(20);
-        UIStyles.styleTextField(txtNombre);
-
-        JLabel lblDescripcion = new JLabel("Descripción:");
-        lblDescripcion.setForeground(UIStyles.ACCENT_RED);
-        JTextArea txtDescripcion = new JTextArea(4, 20);
-        txtDescripcion.setLineWrap(true);
-        txtDescripcion.setWrapStyleWord(true);
-        txtDescripcion.setBackground(UIStyles.SECONDARY_DARK);
-        txtDescripcion.setForeground(UIStyles.TEXT_PRIMARY);
-        txtDescripcion.setCaretColor(UIStyles.ACCENT_RED);
-        txtDescripcion.setBorder(BorderFactory.createLineBorder(UIStyles.BORDER_COLOR, 2));
-        JScrollPane descripcionScroll = new JScrollPane(txtDescripcion);
-        descripcionScroll.setBorder(BorderFactory.createLineBorder(UIStyles.BORDER_COLOR, 2));
-
-        JLabel lblDia = new JLabel("Día:");
-        lblDia.setForeground(UIStyles.ACCENT_RED);
-        String[] dias = { "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo" };
-        JComboBox<String> comboDia = new JComboBox<>(dias);
-        comboDia.setBackground(UIStyles.SECONDARY_DARK);
-        comboDia.setForeground(UIStyles.TEXT_PRIMARY);
-        comboDia.setBorder(BorderFactory.createLineBorder(UIStyles.BORDER_COLOR, 2));
-
-        JLabel lblHoraInicio = new JLabel("Hora inicio (HH:mm):");
-        lblHoraInicio.setForeground(UIStyles.ACCENT_RED);
-        JTextField txtHoraInicio = new JTextField(20);
-        UIStyles.styleTextField(txtHoraInicio);
-
-        JLabel lblHoraFin = new JLabel("Hora fin (HH:mm):");
-        lblHoraFin.setForeground(UIStyles.ACCENT_RED);
-        JTextField txtHoraFin = new JTextField(20);
-        UIStyles.styleTextField(txtHoraFin);
-
-        JLabel lblCapacidad = new JLabel("Capacidad máxima:");
-        lblCapacidad.setForeground(UIStyles.ACCENT_RED);
-        JTextField txtCapacidad = new JTextField(20);
-        UIStyles.styleTextField(txtCapacidad);
-
-        int y = 0;
-        gbc.gridx = 0;
-        gbc.gridy = y++;
-        formPanel.add(lblNombre, gbc);
-        gbc.gridx = 1;
-        formPanel.add(txtNombre, gbc);
-        gbc.gridx = 0;
-        gbc.gridy = y++;
-        formPanel.add(lblDescripcion, gbc);
-        gbc.gridx = 1;
-        formPanel.add(descripcionScroll, gbc);
-        gbc.gridx = 0;
-        gbc.gridy = y++;
-        formPanel.add(lblDia, gbc);
-        gbc.gridx = 1;
-        formPanel.add(comboDia, gbc);
-        gbc.gridx = 0;
-        gbc.gridy = y++;
-        formPanel.add(lblHoraInicio, gbc);
-        gbc.gridx = 1;
-        formPanel.add(txtHoraInicio, gbc);
-        gbc.gridx = 0;
-        gbc.gridy = y++;
-        formPanel.add(lblHoraFin, gbc);
-        gbc.gridx = 1;
-        formPanel.add(txtHoraFin, gbc);
-        gbc.gridx = 0;
-        gbc.gridy = y++;
-        formPanel.add(lblCapacidad, gbc);
-        gbc.gridx = 1;
-        formPanel.add(txtCapacidad, gbc);
-
-        JScrollPane scrollForm = new JScrollPane(formPanel);
-        scrollForm.getViewport().setBackground(UIStyles.PRIMARY_DARK);
-        dialog.add(scrollForm, BorderLayout.CENTER);
-
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
-        buttonPanel.setBackground(UIStyles.SECONDARY_DARK);
-
-        JButton btnGuardar = new JButton("✓ Guardar");
-        UIStyles.styleSuccessButton(btnGuardar);
-        btnGuardar.addActionListener(e -> {
+    private void showAddClassDialog() {
+        JTextField nameField = new JTextField();
+        JTextField descField = new JTextField();
+        JTextField dateField = new JTextField(LocalDate.now().toString());
+        JTextField timeField = new JTextField("07:00");
+        JTextField capField = new JTextField("20");
+        Object[] fields = {"Nombre:", nameField, "Descripcion:", descField, "Fecha:", dateField, "Hora:", timeField, "Cupo:", capField};
+        JPanel form = createForm(fields);
+        if (JOptionPane.showConfirmDialog(this, form, "Nueva Clase", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
             try {
-                Entrenador entrenadorActual = (Entrenador) usuarioActual;
+                Clase c = new Clase(nameField.getText(), descField.getText(), entrenadorActual.getIdEntrenador(), LocalTime.parse(timeField.getText()), LocalTime.parse(timeField.getText()).plusHours(1), dateField.getText(), Integer.parseInt(capField.getText()));
+                entrenadorController.crearClase(c);
+            } catch (Exception ex) { JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage()); }
+        }
+    }
 
-                Clase clase = new Clase();
-                clase.setNombre(txtNombre.getText().trim());
-                clase.setDescripcion(txtDescripcion.getText().trim());
-                clase.setIdEntrenador(entrenadorActual.getIdEntrenador());
-                clase.setNombreEntrenador(entrenadorActual.getNombreCompleto());
-                clase.setDiaSemana((String) comboDia.getSelectedItem());
-                clase.setHorarioInicio(LocalTime.parse(txtHoraInicio.getText().trim()));
-                clase.setHorarioFin(LocalTime.parse(txtHoraFin.getText().trim()));
-                clase.setCapacidadMaxima(Integer.parseInt(txtCapacidad.getText().trim()));
-                clase.setActiva(true);
+    private JPanel createWodsTab() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(BG);
+        String[] cols = {"ID", "Titulo", "Fecha", "Tipo", "Nivel"};
+        DefaultTableModel model = new DefaultTableModel(cols, 0) { public boolean isCellEditable(int r, int c) { return false; } };
+        JTable table = styledTable(model);
+        loadWods(model);
 
-                if (clase.getNombre().isEmpty() || clase.getDescripcion().isEmpty()) {
-                    JOptionPane.showMessageDialog(dialog, "Completa nombre y descripción", "Error",
-                            JOptionPane.ERROR_MESSAGE);
-                    return;
+        JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        top.setBackground(BG);
+        JComboBox<String> monthBox = new JComboBox<>(new String[]{"Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"});
+        monthBox.setSelectedIndex(LocalDate.now().getMonthValue() - 1);
+        JButton loadBtn = actionBtn("Cargar");
+        loadBtn.addActionListener(e -> loadWods(model, LocalDate.now().getYear(), monthBox.getSelectedIndex() + 1));
+        top.add(new JLabel("Mes:")); top.add(monthBox); top.add(loadBtn);
+        panel.add(top, BorderLayout.NORTH);
+        panel.add(new JScrollPane(table), BorderLayout.CENTER);
+        return panel;
+    }
+
+    private void loadWods(DefaultTableModel model) { loadWods(model, LocalDate.now().getYear(), LocalDate.now().getMonthValue()); }
+
+    private void loadWods(DefaultTableModel model, int y, int m) {
+        model.setRowCount(0);
+        try {
+            ApiResponse resp = WodApiService.getInstance().getByMonth(y, m);
+            if (resp.isOk() && resp.data != null && resp.data.isJsonArray()) {
+                for (JsonElement e : resp.data.getAsJsonArray()) {
+                    JsonObject w = e.getAsJsonObject();
+                    model.addRow(new Object[]{w.has("id_wod")?w.get("id_wod").getAsInt():0, w.has("titulo")?w.get("titulo").getAsString():"", w.has("fecha")?w.get("fecha").getAsString():"", w.has("tipo")?w.get("tipo").getAsString():"", w.has("nivel")?w.get("nivel").getAsString():""});
                 }
-
-                entrenadorController.crearClase(clase);
-                JOptionPane.showMessageDialog(dialog, "Clase creada exitosamente", "Éxito",
-                        JOptionPane.INFORMATION_MESSAGE);
-                dialog.dispose();
-
-                // Recargar el dashboard
-                dispose();
-                new EntrenadorDashboard();
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(dialog, "Revisa los datos. Usa formato HH:mm en los horarios.", "Error",
-                        JOptionPane.ERROR_MESSAGE);
             }
-        });
-
-        JButton btnCancelar = new JButton("✗ Cancelar");
-        UIStyles.styleDangerButton(btnCancelar);
-        btnCancelar.addActionListener(e -> dialog.dispose());
-
-        buttonPanel.add(btnGuardar);
-        buttonPanel.add(btnCancelar);
-        dialog.add(buttonPanel, BorderLayout.SOUTH);
-
-        dialog.setVisible(true);
+        } catch (Exception ex) {}
     }
 
     private JPanel createProfileTab() {
         JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(UIStyles.PRIMARY_DARK);
+        panel.setBackground(BG);
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(15, 20, 15, 20);
+        gbc.insets = new Insets(10, 20, 10, 20);
         gbc.anchor = GridBagConstraints.WEST;
-
-        addInfoRow(panel, "👤 Nombre:", usuarioActual.getNombre(), 0, gbc);
-        addInfoRow(panel, "👤 Apellido:", usuarioActual.getApellido(), 1, gbc);
-        addInfoRow(panel, "📧 Email:", usuarioActual.getEmail(), 2, gbc);
-        addInfoRow(panel, "📱 Teléfono:", usuarioActual.getTelefono() != null ? usuarioActual.getTelefono() : "N/A", 3,
-                gbc);
-
+        addRow(panel, "Nombre:", usuarioActual.getNombre(), 0, gbc);
+        addRow(panel, "Apellido:", usuarioActual.getApellido(), 1, gbc);
+        addRow(panel, "Email:", usuarioActual.getEmail(), 2, gbc);
+        addRow(panel, "Especialidad:", entrenadorActual.getEspecialidad() != null ? entrenadorActual.getEspecialidad() : "N/A", 3, gbc);
+        addRow(panel, "Experiencia:", entrenadorActual.getExperienciaAnios() + " anos", 4, gbc);
         return panel;
     }
 
-    private void addInfoRow(JPanel panel, String label, String value, int row, GridBagConstraints gbc) {
-        JLabel labelComp = new JLabel(label);
-        UIStyles.styleLabel(labelComp, true);
-        gbc.gridx = 0;
-        gbc.gridy = row;
-        panel.add(labelComp, gbc);
-
-        JLabel valueComp = new JLabel(value);
-        valueComp.setForeground(UIStyles.TEXT_PRIMARY);
-        valueComp.setFont(UIStyles.FONT_LABEL);
-        gbc.gridx = 1;
-        panel.add(valueComp, gbc);
+    private void addRow(JPanel p, String label, String val, int row, GridBagConstraints gbc) {
+        JLabel l = new JLabel(label); l.setForeground(RED); l.setFont(new Font("Arial", Font.BOLD, 12));
+        gbc.gridx = 0; gbc.gridy = row; p.add(l, gbc);
+        JLabel v = new JLabel(val); v.setForeground(Color.WHITE); v.setFont(new Font("Arial", Font.PLAIN, 12));
+        gbc.gridx = 1; p.add(v, gbc);
     }
 
-    private void logout() {
-        Object[] opciones = { "Sí", "No" };
-        int confirm = JOptionPane.showOptionDialog(this,
-                "¿Confirmas que deseas cerrar sesión?",
-                "Cerrar Sesión",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.QUESTION_MESSAGE,
-                null,
-                opciones,
-                opciones[0]);
+    private JPanel sectionPanel(String title, String subtitle) {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(BG);
+        JLabel t = new JLabel(title, SwingConstants.CENTER);
+        t.setFont(new Font("Arial", Font.BOLD, 20));
+        t.setForeground(Color.WHITE);
+        panel.add(t);
+        return panel;
+    }
 
-        if (confirm == 0) {
-            authController.logout();
-            dispose();
-            new LoginView();
+    private JTable styledTable(DefaultTableModel model) {
+        JTable table = new JTable(model);
+        table.setBackground(CARD_BG);
+        table.setForeground(Color.WHITE);
+        table.setGridColor(new Color(0x3A, 0x3A, 0x3C));
+        table.setSelectionBackground(RED);
+        table.setRowHeight(26);
+        table.getTableHeader().setBackground(DARK);
+        table.getTableHeader().setForeground(RED);
+        table.getTableHeader().setFont(new Font("Arial", Font.BOLD, 11));
+        table.setFont(new Font("Arial", Font.PLAIN, 11));
+        return table;
+    }
+
+    private JButton actionBtn(String text) {
+        JButton btn = new JButton(text);
+        btn.setBackground(RED); btn.setForeground(Color.WHITE);
+        btn.setFont(new Font("Arial", Font.BOLD, 10));
+        btn.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
+        btn.setFocusPainted(false);
+        return btn;
+    }
+
+    private JPanel createForm(Object[] rows) {
+        JPanel panel = new JPanel(new GridLayout(rows.length/2, 2, 8, 6));
+        panel.setBackground(BG);
+        for (int i = 0; i < rows.length; i += 2) {
+            JLabel lbl = new JLabel((String)rows[i]); lbl.setForeground(GRAY); lbl.setFont(new Font("Arial", Font.PLAIN, 11)); panel.add(lbl);
+            JTextField tf = (JTextField)rows[i+1];
+            tf.setBackground(CARD_BG); tf.setForeground(Color.WHITE); tf.setCaretColor(RED);
+            tf.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(new Color(0x3A,0x3A,0x3C),1), BorderFactory.createEmptyBorder(4,6,4,6)));
+            tf.setFont(new Font("Arial", Font.PLAIN, 11));
+            panel.add(tf);
         }
+        return panel;
     }
 }
