@@ -715,7 +715,8 @@ public class LandingView extends JFrame {
     }
 
     private void scrollTo(int section) {
-        JScrollPane sp = (JScrollPane) ((JPanel) getContentPane().getComponent(0)).getComponent(0);
+        JScrollPane sp = findScrollPane(getContentPane());
+        if (sp == null) return;
         JViewport vp = sp.getViewport();
         Component comp = vp.getView();
         if (comp instanceof JPanel) {
@@ -725,6 +726,17 @@ public class LandingView extends JFrame {
                 vp.setViewPosition(new Point(0, rect.y));
             }
         }
+    }
+
+    private JScrollPane findScrollPane(Container c) {
+        for (Component comp : c.getComponents()) {
+            if (comp instanceof JScrollPane) return (JScrollPane) comp;
+            if (comp instanceof Container) {
+                JScrollPane found = findScrollPane((Container) comp);
+                if (found != null) return found;
+            }
+        }
+        return null;
     }
 
     public static void main(String[] args) {
