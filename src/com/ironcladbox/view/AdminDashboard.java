@@ -773,7 +773,10 @@ public class AdminDashboard extends JFrame {
         table.setGridColor(new Color(0x3A, 0x3A, 0x3C));
         table.setSelectionBackground(RED);
         table.setRowHeight(28);
-        table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        for (int i = 0; i < table.getColumnCount(); i++) {
+            table.getColumnModel().getColumn(i).setPreferredWidth(100);
+        }
         table.getTableHeader().setBackground(DARK);
         table.getTableHeader().setForeground(RED);
         table.getTableHeader().setFont(new Font("Arial", Font.BOLD, 11));
