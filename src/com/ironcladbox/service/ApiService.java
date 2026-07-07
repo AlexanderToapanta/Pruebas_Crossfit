@@ -21,7 +21,7 @@ public class ApiService {
 
     private ApiService() {
         this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(30))
+                .connectTimeout(Duration.ofSeconds(120))
                 .build();
         this.gson = new Gson();
         this.cacheService = CacheService.getInstance();
@@ -151,7 +151,7 @@ public class ApiService {
     private HttpResponse<String> sendHttp(String method, String url, String jsonBody) throws Exception {
         HttpRequest.Builder builder = HttpRequest.newBuilder()
                 .uri(URI.create(url))
-                .timeout(Duration.ofSeconds(30));
+                .timeout(Duration.ofSeconds(120));
 
         if (jsonBody != null) {
             builder.header("Content-Type", "application/json")
