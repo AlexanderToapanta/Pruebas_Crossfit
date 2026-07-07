@@ -316,17 +316,21 @@ public class AdminController {
         a.setEmail(json.has("email") && !json.get("email").isJsonNull() ? json.get("email").getAsString() : "");
         a.setTelefono(json.has("telefono") && !json.get("telefono").isJsonNull() ? json.get("telefono").getAsString() : "");
         a.setRol(Rol.ATLETA);
-        a.setActivo(json.has("estado") && !json.get("estado").isJsonNull() ? json.get("estado").getAsBoolean() : true);
-        if (json.has("peso") && !json.get("peso").isJsonNull()) a.setPeso(json.get("peso").getAsDouble());
-        if (json.has("altura") && !json.get("altura").isJsonNull()) a.setAltura(json.get("altura").getAsDouble());
-        a.setIdMembresia(json.has("id_membresia") && !json.get("id_membresia").isJsonNull() ? json.get("id_membresia").getAsInt() : 0);
-        a.setNombreMembresia(json.has("nombre_membresia") && !json.get("nombre_membresia").isJsonNull() ? json.get("nombre_membresia").getAsString() : null);
-        a.setMembresiaActiva(json.has("membresia_activa") && !json.get("membresia_activa").isJsonNull() ? json.get("membresia_activa").getAsBoolean() : false);
-        if (json.has("fecha_inicio_membresia") && !json.get("fecha_inicio_membresia").isJsonNull()) {
-            try { a.setFechaInicioMembresia(LocalDate.parse(json.get("fecha_inicio_membresia").getAsString())); } catch (Exception ignored) {}
+        a.setActivo(json.has("activo") && !json.get("activo").isJsonNull() ? json.get("activo").getAsBoolean() : true);
+        if (json.has("peso") && !json.get("peso").isJsonNull() && !json.get("peso").getAsString().isEmpty()) {
+            try { a.setPeso(json.get("peso").getAsDouble()); } catch (Exception ignored) {}
         }
-        if (json.has("fecha_fin_membresia") && !json.get("fecha_fin_membresia").isJsonNull()) {
-            try { a.setFechaFinMembresia(LocalDate.parse(json.get("fecha_fin_membresia").getAsString())); } catch (Exception ignored) {}
+        if (json.has("altura") && !json.get("altura").isJsonNull() && !json.get("altura").getAsString().isEmpty()) {
+            try { a.setAltura(json.get("altura").getAsDouble()); } catch (Exception ignored) {}
+        }
+        a.setIdMembresia(json.has("id_membresia") && !json.get("id_membresia").isJsonNull() ? json.get("id_membresia").getAsInt() : 0);
+        a.setNombreMembresia(json.has("membresia_nombre") && !json.get("membresia_nombre").isJsonNull() ? json.get("membresia_nombre").getAsString() : null);
+        a.setMembresiaActiva(json.has("id_membresia") && !json.get("id_membresia").isJsonNull() && json.get("id_membresia").getAsInt() > 0);
+        if (json.has("fecha_inicio") && !json.get("fecha_inicio").isJsonNull()) {
+            try { a.setFechaInicioMembresia(LocalDate.parse(json.get("fecha_inicio").getAsString().substring(0, 10))); } catch (Exception ignored) {}
+        }
+        if (json.has("fecha_fin") && !json.get("fecha_fin").isJsonNull()) {
+            try { a.setFechaFinMembresia(LocalDate.parse(json.get("fecha_fin").getAsString().substring(0, 10))); } catch (Exception ignored) {}
         }
         return a;
     }

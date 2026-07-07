@@ -85,13 +85,13 @@ public class AtletaController {
                 Suscripcion s = new Suscripcion();
                 s.setIdAtleta(idAtleta);
                 if (json.has("id_membresia")) s.setIdMembresia(json.get("id_membresia").getAsInt());
-                if (json.has("nombre_membresia")) s.setNombreMembresia(json.get("nombre_membresia").getAsString());
+                if (json.has("membresia_nombre")) s.setNombreMembresia(json.get("membresia_nombre").getAsString());
                 if (json.has("precio")) s.setPrecioMembresia(json.get("precio").getAsDouble());
-                if (json.has("fecha_inicio_membresia")) {
-                    try { s.setFechaInicio(LocalDate.parse(json.get("fecha_inicio_membresia").getAsString())); } catch (Exception ex) {}
+                if (json.has("fecha_inicio")) {
+                    try { s.setFechaInicio(LocalDate.parse(json.get("fecha_inicio").getAsString().substring(0, 10))); } catch (Exception ex) {}
                 }
-                if (json.has("fecha_fin_membresia")) {
-                    try { s.setFechaFin(LocalDate.parse(json.get("fecha_fin_membresia").getAsString())); } catch (Exception ex) {}
+                if (json.has("fecha_fin")) {
+                    try { s.setFechaFin(LocalDate.parse(json.get("fecha_fin").getAsString().substring(0, 10))); } catch (Exception ex) {}
                 }
                 s.setActiva(true);
                 return s;
