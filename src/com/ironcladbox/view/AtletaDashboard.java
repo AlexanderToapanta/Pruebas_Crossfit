@@ -44,6 +44,7 @@ public class AtletaDashboard extends JFrame {
         setTitle("IroncladBox - Dashboard Atleta");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(950, 650);
+        setMinimumSize(new Dimension(650, 450));
         setLocationRelativeTo(null);
 
         JPanel mainPanel = new JPanel(new BorderLayout());
@@ -156,6 +157,11 @@ public class AtletaDashboard extends JFrame {
     }
 
     private JPanel createProfileTab() {
+        JPanel outer = new JPanel();
+        outer.setLayout(new BoxLayout(outer, BoxLayout.Y_AXIS));
+        outer.setBackground(BG);
+        outer.setBorder(BorderFactory.createEmptyBorder(30, 50, 30, 50));
+
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBackground(BG);
         GridBagConstraints gbc = new GridBagConstraints();
@@ -173,7 +179,26 @@ public class AtletaDashboard extends JFrame {
         addPRow(panel, "Altura:", atletaActual.getAltura() > 0 ? atletaActual.getAltura() + " m" : "N/A", 5, gbc);
         addPRow(panel, "IMC:", imcStr, 6, gbc);
 
-        return panel;
+        JButton changePwdBtn = new JButton("Cambiar Contrasena");
+        changePwdBtn.setBackground(RED); changePwdBtn.setForeground(Color.WHITE);
+        changePwdBtn.setFont(new Font("Arial", Font.BOLD, 11));
+        changePwdBtn.setAlignmentX(CENTER_ALIGNMENT);
+        changePwdBtn.setMaximumSize(new Dimension(200, 35));
+        changePwdBtn.addActionListener(e -> {
+            JPasswordField cp = new JPasswordField(); cp.setBackground(CARD_BG); cp.setForeground(Color.WHITE);
+            JPasswordField np = new JPasswordField(); np.setBackground(CARD_BG); np.setForeground(Color.WHITE);
+            if (JOptionPane.showConfirmDialog(this, new JPanel() {{ setBackground(BG); add(new JLabel("Contrasena actual:")); add(cp); add(new JLabel("Nueva:")); add(np); }}, "Cambiar Contrasena", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+                try {
+                    ApiResponse resp = AuthApiService.getInstance().changePassword(new String(cp.getPassword()), new String(np.getPassword()));
+                    JOptionPane.showMessageDialog(this, resp.isOk() ? "Contrasena actualizada!" : resp.message);
+                } catch (Exception ex) { JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage()); }
+            }
+        });
+
+        outer.add(panel);
+        outer.add(Box.createVerticalStrut(15));
+        outer.add(changePwdBtn);
+        return outer;
     }
 
     private JPanel createClassesTab() {

@@ -43,6 +43,7 @@ public class AdminDashboard extends JFrame {
         setTitle("IroncladBox - Panel de Administracion");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1100, 750);
+        setMinimumSize(new Dimension(800, 550));
         setLocationRelativeTo(null);
 
         JPanel mainPanel = new JPanel(new BorderLayout());
@@ -589,18 +590,54 @@ public class AdminDashboard extends JFrame {
 
     // ============ TAB: MI PERFIL ============
     private JPanel createProfileTab() {
-        JPanel panel = new JPanel(new GridBagLayout());
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBackground(BG);
+        panel.setBorder(BorderFactory.createEmptyBorder(40, 60, 40, 60));
+
+        JPanel fields = new JPanel(new GridBagLayout());
+        fields.setBackground(BG);
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(12, 30, 12, 30);
+        gbc.insets = new Insets(12, 10, 12, 10);
         gbc.anchor = GridBagConstraints.WEST;
 
-        addPRow(panel, "Nombre:", usuarioActual.getNombre(), 0, gbc);
-        addPRow(panel, "Apellido:", usuarioActual.getApellido(), 1, gbc);
-        addPRow(panel, "Email:", usuarioActual.getEmail(), 2, gbc);
-        addPRow(panel, "Rol:", "ADMINISTRADOR", 3, gbc);
+        addPRow(fields, "Nombre:", usuarioActual.getNombre(), 0, gbc);
+        addPRow(fields, "Apellido:", usuarioActual.getApellido(), 1, gbc);
+        addPRow(fields, "Email:", usuarioActual.getEmail(), 2, gbc);
+        addPRow(fields, "Rol:", "ADMINISTRADOR", 3, gbc);
 
+        JButton changePwdBtn = new JButton("Cambiar Contrasena");
+        changePwdBtn.setBackground(RED); changePwdBtn.setForeground(Color.WHITE);
+        changePwdBtn.setFont(new Font("Arial", Font.BOLD, 11));
+        changePwdBtn.setAlignmentX(CENTER_ALIGNMENT);
+        changePwdBtn.addActionListener(e -> showChangePasswordDialog());
+        changePwdBtn.setMaximumSize(new Dimension(200, 35));
+
+        panel.add(fields);
+        panel.add(Box.createVerticalStrut(20));
+        panel.add(changePwdBtn);
         return panel;
+    }
+
+    private void showChangePasswordDialog() {
+        JPasswordField currentPwd = new JPasswordField();
+        JPasswordField newPwd = new JPasswordField();
+        currentPwd.setBackground(CARD_BG); currentPwd.setForeground(Color.WHITE); currentPwd.setCaretColor(RED);
+        newPwd.setBackground(CARD_BG); newPwd.setForeground(Color.WHITE); newPwd.setCaretColor(RED);
+        Object[] fields = {"Contrasena actual:", currentPwd, "Nueva contrasena:", newPwd};
+        JPanel form = createFormPanel(fields);
+        if (JOptionPane.showConfirmDialog(this, form, "Cambiar Contrasena", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+            try {
+                JsonObject body = new JsonObject();
+                body.addProperty("currentPassword", new String(currentPwd.getPassword()));
+                body.addProperty("newPassword", new String(newPwd.getPassword()));
+                ApiResponse resp = AuthApiService.getInstance().changePassword(
+                    new String(currentPwd.getPassword()), new String(newPwd.getPassword()));
+                JOptionPane.showMessageDialog(this, resp.isOk() ? "Contrasena actualizada!" : resp.message);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
+            }
+        }
     }
 
     // ============ UTILIDADES ============

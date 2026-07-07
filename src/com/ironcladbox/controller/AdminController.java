@@ -252,62 +252,66 @@ public class AdminController {
         return obtenerMembresias().stream().filter(Membresia::isActiva).toList().size();
     }
 
+    private boolean safeBool(JsonObject json, String key) {
+        return json.has(key) && !json.get(key).isJsonNull() && json.get(key).getAsBoolean();
+    }
+
     private Atleta parseAtleta(JsonObject json) {
         Atleta a = new Atleta();
-        a.setIdAtleta(json.has("id_atleta") ? json.get("id_atleta").getAsInt() : 0);
-        a.setIdUsuario(json.has("id_usuario") ? json.get("id_usuario").getAsInt() : 0);
-        a.setNombre(json.has("nombre") ? json.get("nombre").getAsString() : "");
-        a.setApellido(json.has("apellido") ? json.get("apellido").getAsString() : "");
-        a.setEmail(json.has("email") ? json.get("email").getAsString() : "");
-        a.setTelefono(json.has("telefono") ? json.get("telefono").getAsString() : "");
+        a.setIdAtleta(json.has("id_atleta") && !json.get("id_atleta").isJsonNull() ? json.get("id_atleta").getAsInt() : 0);
+        a.setIdUsuario(json.has("id_usuario") && !json.get("id_usuario").isJsonNull() ? json.get("id_usuario").getAsInt() : 0);
+        a.setNombre(json.has("nombre") && !json.get("nombre").isJsonNull() ? json.get("nombre").getAsString() : "");
+        a.setApellido(json.has("apellido") && !json.get("apellido").isJsonNull() ? json.get("apellido").getAsString() : "");
+        a.setEmail(json.has("email") && !json.get("email").isJsonNull() ? json.get("email").getAsString() : "");
+        a.setTelefono(json.has("telefono") && !json.get("telefono").isJsonNull() ? json.get("telefono").getAsString() : "");
         a.setRol(Rol.ATLETA);
-        a.setActivo(json.has("estado") ? json.get("estado").getAsBoolean() : true);
-        if (json.has("peso")) a.setPeso(json.get("peso").getAsDouble());
-        if (json.has("altura")) a.setAltura(json.get("altura").getAsDouble());
+        a.setActivo(json.has("estado") && !json.get("estado").isJsonNull() ? json.get("estado").getAsBoolean() : true);
+        if (json.has("peso") && !json.get("peso").isJsonNull()) a.setPeso(json.get("peso").getAsDouble());
+        if (json.has("altura") && !json.get("altura").isJsonNull()) a.setAltura(json.get("altura").getAsDouble());
         return a;
     }
 
     private Entrenador parseEntrenador(JsonObject json) {
         Entrenador e = new Entrenador();
-        e.setIdEntrenador(json.has("id_entrenador") ? json.get("id_entrenador").getAsInt() : 0);
-        e.setIdUsuario(json.has("id_usuario") ? json.get("id_usuario").getAsInt() : 0);
-        e.setNombre(json.has("nombre") ? json.get("nombre").getAsString() : "");
-        e.setApellido(json.has("apellido") ? json.get("apellido").getAsString() : "");
-        e.setEmail(json.has("email") ? json.get("email").getAsString() : "");
-        e.setTelefono(json.has("telefono") ? json.get("telefono").getAsString() : "");
+        e.setIdEntrenador(json.has("id_entrenador") && !json.get("id_entrenador").isJsonNull() ? json.get("id_entrenador").getAsInt() : 0);
+        e.setIdUsuario(json.has("id_usuario") && !json.get("id_usuario").isJsonNull() ? json.get("id_usuario").getAsInt() : 0);
+        e.setNombre(json.has("nombre") && !json.get("nombre").isJsonNull() ? json.get("nombre").getAsString() : "");
+        e.setApellido(json.has("apellido") && !json.get("apellido").isJsonNull() ? json.get("apellido").getAsString() : "");
+        e.setEmail(json.has("email") && !json.get("email").isJsonNull() ? json.get("email").getAsString() : "");
+        e.setTelefono(json.has("telefono") && !json.get("telefono").isJsonNull() ? json.get("telefono").getAsString() : "");
         e.setRol(Rol.ENTRENADOR);
-        e.setActivo(json.has("estado") ? json.get("estado").getAsBoolean() : true);
-        if (json.has("especialidad")) e.setEspecialidad(json.get("especialidad").getAsString());
-        if (json.has("anios_experiencia")) e.setExperienciaAnios(json.get("anios_experiencia").getAsInt());
-        if (json.has("certificaciones")) e.setCertificacion(json.get("certificaciones").getAsString());
+        e.setActivo(json.has("estado") && !json.get("estado").isJsonNull() ? json.get("estado").getAsBoolean() : true);
+        if (json.has("especialidad") && !json.get("especialidad").isJsonNull()) e.setEspecialidad(json.get("especialidad").getAsString());
+        if (json.has("anios_experiencia") && !json.get("anios_experiencia").isJsonNull()) e.setExperienciaAnios(json.get("anios_experiencia").getAsInt());
+        if (json.has("certificaciones") && !json.get("certificaciones").isJsonNull()) e.setCertificacion(json.get("certificaciones").getAsString());
         return e;
     }
 
     private Membresia parseMembresia(JsonObject json) {
         Membresia m = new Membresia();
-        m.setIdMembresia(json.has("id_membresia") ? json.get("id_membresia").getAsInt() : 0);
-        m.setNombre(json.has("nombre") ? json.get("nombre").getAsString() : "");
-        m.setDescripcion(json.has("descripcion") ? json.get("descripcion").getAsString() : "");
-        m.setPrecio(json.has("precio") ? json.get("precio").getAsDouble() : 0.0);
-        m.setDuracionDias(json.has("duracion_dias") ? json.get("duracion_dias").getAsInt() : 30);
-        m.setBeneficios(json.has("beneficios") ? json.get("beneficios").getAsString() : "");
-        m.setActiva(json.has("estado") ? json.get("estado").getAsBoolean() : true);
+        m.setIdMembresia(json.has("id_membresia") && !json.get("id_membresia").isJsonNull() ? json.get("id_membresia").getAsInt() : 0);
+        m.setNombre(json.has("nombre") && !json.get("nombre").isJsonNull() ? json.get("nombre").getAsString() : "");
+        m.setDescripcion(json.has("descripcion") && !json.get("descripcion").isJsonNull() ? json.get("descripcion").getAsString() : "");
+        m.setPrecio(json.has("precio") && !json.get("precio").isJsonNull() ? json.get("precio").getAsDouble() : 0.0);
+        m.setDuracionDias(json.has("duracion_dias") && !json.get("duracion_dias").isJsonNull() ? json.get("duracion_dias").getAsInt() : 30);
+        m.setBeneficios(json.has("beneficios") && !json.get("beneficios").isJsonNull() ? json.get("beneficios").getAsString() : "");
+        m.setActiva(json.has("estado") && !json.get("estado").isJsonNull() ? json.get("estado").getAsBoolean() : true);
         return m;
     }
 
     private Clase parseClase(JsonObject json) {
         Clase c = new Clase();
-        c.setIdClase(json.has("id_clase") ? json.get("id_clase").getAsInt() : 0);
-        c.setNombre(json.has("nombre") ? json.get("nombre").getAsString() : "");
-        c.setDescripcion(json.has("descripcion") ? json.get("descripcion").getAsString() : "");
-        if (json.has("id_entrenador")) c.setIdEntrenador(json.get("id_entrenador").getAsInt());
-        if (json.has("entrenador_nombre")) c.setNombreEntrenador(json.get("entrenador_nombre").getAsString());
-        if (json.has("hora")) {
+        c.setIdClase(json.has("id_clase") && !json.get("id_clase").isJsonNull() ? json.get("id_clase").getAsInt() : 0);
+        c.setNombre(json.has("nombre") && !json.get("nombre").isJsonNull() ? json.get("nombre").getAsString() : "");
+        c.setDescripcion(json.has("descripcion") && !json.get("descripcion").isJsonNull() ? json.get("descripcion").getAsString() : "");
+        if (json.has("id_entrenador") && !json.get("id_entrenador").isJsonNull()) c.setIdEntrenador(json.get("id_entrenador").getAsInt());
+        if (json.has("entrenador_nombre") && !json.get("entrenador_nombre").isJsonNull()) c.setNombreEntrenador(json.get("entrenador_nombre").getAsString());
+        if (json.has("hora") && !json.get("hora").isJsonNull()) {
             try { c.setHorarioInicio(LocalTime.parse(json.get("hora").getAsString().substring(0, 5))); } catch (Exception ex) {}
         }
-        if (json.has("capacidad_maxima")) c.setCapacidadMaxima(json.get("capacidad_maxima").getAsInt());
-        if (json.has("cupo_maximo")) c.setCapacidadMaxima(json.get("cupo_maximo").getAsInt());
-        c.setActiva("ACTIVA".equals(json.has("estado") ? json.get("estado").getAsString() : "ACTIVA"));
+        if (json.has("capacidad_maxima") && !json.get("capacidad_maxima").isJsonNull()) c.setCapacidadMaxima(json.get("capacidad_maxima").getAsInt());
+        if (json.has("cupo_maximo") && !json.get("cupo_maximo").isJsonNull()) c.setCapacidadMaxima(json.get("cupo_maximo").getAsInt());
+        c.setActiva(!json.has("estado") || json.get("estado").isJsonNull() || "ACTIVA".equals(json.get("estado").getAsString()));
         return c;
     }
 }

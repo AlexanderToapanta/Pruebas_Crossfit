@@ -39,6 +39,7 @@ public class EntrenadorDashboard extends JFrame {
         setTitle("IroncladBox - Dashboard Entrenador");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1050, 700);
+        setMinimumSize(new Dimension(700, 500));
         setLocationRelativeTo(null);
 
         JPanel mainPanel = new JPanel(new BorderLayout());
@@ -202,17 +203,45 @@ public class EntrenadorDashboard extends JFrame {
     }
 
     private JPanel createProfileTab() {
-        JPanel panel = new JPanel(new GridBagLayout());
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBackground(BG);
+        panel.setBorder(BorderFactory.createEmptyBorder(40, 60, 40, 60));
+
+        JPanel fields = new JPanel(new GridBagLayout());
+        fields.setBackground(BG);
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 20, 10, 20);
-        gbc.anchor = GridBagConstraints.WEST;
-        addRow(panel, "Nombre:", usuarioActual.getNombre(), 0, gbc);
-        addRow(panel, "Apellido:", usuarioActual.getApellido(), 1, gbc);
-        addRow(panel, "Email:", usuarioActual.getEmail(), 2, gbc);
-        addRow(panel, "Especialidad:", entrenadorActual.getEspecialidad() != null ? entrenadorActual.getEspecialidad() : "N/A", 3, gbc);
-        addRow(panel, "Experiencia:", entrenadorActual.getExperienciaAnios() + " anos", 4, gbc);
+        gbc.insets = new Insets(10, 10, 10, 10); gbc.anchor = GridBagConstraints.WEST;
+        addRow(fields, "Nombre:", usuarioActual.getNombre(), 0, gbc);
+        addRow(fields, "Apellido:", usuarioActual.getApellido(), 1, gbc);
+        addRow(fields, "Email:", usuarioActual.getEmail(), 2, gbc);
+        addRow(fields, "Especialidad:", entrenadorActual.getEspecialidad() != null ? entrenadorActual.getEspecialidad() : "N/A", 3, gbc);
+        addRow(fields, "Experiencia:", entrenadorActual.getExperienciaAnios() + " anos", 4, gbc);
+
+        JButton changePwdBtn = new JButton("Cambiar Contrasena");
+        changePwdBtn.setBackground(RED); changePwdBtn.setForeground(Color.WHITE);
+        changePwdBtn.setFont(new Font("Arial", Font.BOLD, 11));
+        changePwdBtn.setAlignmentX(CENTER_ALIGNMENT);
+        changePwdBtn.setMaximumSize(new Dimension(200, 35));
+        changePwdBtn.addActionListener(e -> showChangePwd());
+
+        panel.add(fields);
+        panel.add(Box.createVerticalStrut(20));
+        panel.add(changePwdBtn);
         return panel;
+    }
+
+    private void showChangePwd() {
+        JPasswordField cp = new JPasswordField(); cp.setBackground(CARD_BG); cp.setForeground(Color.WHITE);
+        JPasswordField np = new JPasswordField(); np.setBackground(CARD_BG); np.setForeground(Color.WHITE);
+        Object[] fields = {"Contrasena actual:", cp, "Nueva contrasena:", np};
+        JPanel form = createForm(fields);
+        if (JOptionPane.showConfirmDialog(this, form, "Cambiar Contrasena", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+            try {
+                ApiResponse resp = AuthApiService.getInstance().changePassword(new String(cp.getPassword()), new String(np.getPassword()));
+                JOptionPane.showMessageDialog(this, resp.isOk() ? "Contrasena actualizada!" : resp.message);
+            } catch (Exception ex) { JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage()); }
+        }
     }
 
     private void addRow(JPanel p, String label, String val, int row, GridBagConstraints gbc) {
