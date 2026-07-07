@@ -22,5 +22,5 @@ if exist resources (
 echo ==================================
 echo Compilacion exitosa!
 echo Para ejecutar:
-echo java -cp "bin;lib\*" com.ironcladbox.view.LoginView
+echo java -cp "bin;lib\*" com.ironcladbox.view.LandingView
 pause
