@@ -180,7 +180,7 @@ public class AdminDashboard extends JFrame {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(BG);
 
-        String[] cols = {"ID", "Nombre", "Email", "Membresia", "Vigencia", "Estado"};
+        String[] cols = {"ID", "Nombre", "Apellido", "Email", "Telefono", "Direccion", "Emergencia", "Membresia", "Vigencia", "Estado"};
         DefaultTableModel model = new DefaultTableModel(cols, 0) {
             public boolean isCellEditable(int r, int c) { return false; }
         };
@@ -218,7 +218,8 @@ public class AdminDashboard extends JFrame {
         model.setRowCount(0);
         List<Atleta> list = adminController.obtenerTodosAtletas();
         for (Atleta a : list) {
-            model.addRow(new Object[]{a.getIdAtleta(), a.getNombreCompleto(), a.getEmail(),
+            model.addRow(new Object[]{a.getIdAtleta(), a.getNombre(), a.getApellido(), a.getEmail(),
+                a.getTelefono() != null ? a.getTelefono() : "", "", "",
                 a.getNombreMembresia() != null ? a.getNombreMembresia() : "Sin membresia",
                 a.getVigenciaMembresia(),
                 a.isActivo() ? "Activo" : "Inactivo"});
@@ -230,7 +231,11 @@ public class AdminDashboard extends JFrame {
         JTextField lastNameField = new JTextField();
         JTextField emailField = new JTextField();
         JTextField phoneField = new JTextField();
-        Object[] fields = {"Nombre:", nameField, "Apellido:", lastNameField, "Email:", emailField, "Telefono:", phoneField};
+        JTextField pesoField = new JTextField();
+        JTextField alturaField = new JTextField();
+        JTextField dirField = new JTextField();
+        JTextField emergField = new JTextField();
+        Object[] fields = {"Nombre:", nameField, "Apellido:", lastNameField, "Email:", emailField, "Telefono:", phoneField, "Peso:", pesoField, "Altura:", alturaField, "Direccion:", dirField, "Emergencia:", emergField};
         JPanel form = createFormPanel(fields);
 
         int result = JOptionPane.showConfirmDialog(this, form, "Nuevo Atleta", JOptionPane.OK_CANCEL_OPTION);
@@ -242,6 +247,10 @@ public class AdminDashboard extends JFrame {
                 body.addProperty("email", emailField.getText().trim());
                 body.addProperty("fecha_nacimiento", LocalDate.now().minusYears(20).toString());
                 body.addProperty("telefono", phoneField.getText().trim());
+                body.addProperty("peso", pesoField.getText().trim());
+                body.addProperty("altura", alturaField.getText().trim());
+                body.addProperty("direccion", dirField.getText().trim());
+                body.addProperty("contacto_emergencia", emergField.getText().trim());
                 AthleteApiService.getInstance().create(body);
                 loadAthletes(model);
             } catch (Exception ex) {
@@ -256,7 +265,9 @@ public class AdminDashboard extends JFrame {
         JTextField lastNameField = new JTextField(a.getApellido());
         JTextField emailField = new JTextField(a.getEmail());
         JTextField phoneField = new JTextField(a.getTelefono() != null ? a.getTelefono() : "");
-        Object[] fields = {"Nombre:", nameField, "Apellido:", lastNameField, "Email:", emailField, "Telefono:", phoneField};
+        JTextField dirField = new JTextField("");
+        JTextField emergField = new JTextField("");
+        Object[] fields = {"Nombre:", nameField, "Apellido:", lastNameField, "Email:", emailField, "Telefono:", phoneField, "Direccion:", dirField, "Emergencia:", emergField};
         JPanel form = createFormPanel(fields);
 
         if (JOptionPane.showConfirmDialog(this, form, "Editar Atleta", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
@@ -265,6 +276,8 @@ public class AdminDashboard extends JFrame {
             body.addProperty("apellido", lastNameField.getText().trim());
             body.addProperty("email", emailField.getText().trim());
             body.addProperty("telefono", phoneField.getText().trim());
+            body.addProperty("direccion", dirField.getText().trim());
+            body.addProperty("contacto_emergencia", emergField.getText().trim());
             AthleteApiService.getInstance().update(a.getIdAtleta(), body);
             loadAthletes(model);
         }
@@ -285,7 +298,7 @@ public class AdminDashboard extends JFrame {
 
     private void toggleAthleteStatus(JTable table, DefaultTableModel model, int row) {
         int idAtleta = (int) model.getValueAt(row, 0);
-        String currentStatus = (String) model.getValueAt(row, 5);
+        String currentStatus = (String) model.getValueAt(row, 9);
         boolean nuevoEstado = !"Activo".equals(currentStatus);
         if (adminController.toggleEstadoAtleta(idAtleta, nuevoEstado)) {
             loadAthletes(model);
@@ -297,7 +310,7 @@ public class AdminDashboard extends JFrame {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(BG);
 
-        String[] cols = {"ID", "Nombre", "Email", "Especialidad", "Exp.", "Estado"};
+        String[] cols = {"ID", "Nombre", "Apellido", "Email", "Especialidad", "Exp.", "Certificaciones", "Telefono", "Estado"};
         DefaultTableModel model = new DefaultTableModel(cols, 0) {
             public boolean isCellEditable(int r, int c) { return false; }
         };
@@ -331,8 +344,10 @@ public class AdminDashboard extends JFrame {
     private void loadTrainers(DefaultTableModel model) {
         model.setRowCount(0);
         for (Entrenador e : adminController.obtenerTodosEntrenadores()) {
-            model.addRow(new Object[]{e.getIdEntrenador(), e.getNombreCompleto(), e.getEmail(),
+            model.addRow(new Object[]{e.getIdEntrenador(), e.getNombre(), e.getApellido(), e.getEmail(),
                 e.getEspecialidad() != null ? e.getEspecialidad() : "", e.getExperienciaAnios(),
+                e.getCertificacion() != null ? e.getCertificacion() : "",
+                e.getTelefono() != null ? e.getTelefono() : "",
                 e.isActivo() ? "Activo" : "Inactivo"});
         }
     }
@@ -345,23 +360,24 @@ public class AdminDashboard extends JFrame {
         JTextField expField = new JTextField(String.valueOf(e.getExperienciaAnios()));
         JTextField certField = new JTextField(e.getCertificacion() != null ? e.getCertificacion() : "");
         JTextField phoneField = new JTextField(e.getTelefono() != null ? e.getTelefono() : "");
-        Object[] fields = {"Especialidad:", specField, "Experiencia:", expField, "Certificaciones:", certField, "Telefono:", phoneField};
+        JTextField bioField = new JTextField("");
+        Object[] fields = {"Especialidad:", specField, "Experiencia:", expField, "Certificaciones:", certField, "Telefono:", phoneField, "Biografia:", bioField};
         JPanel form = createFormPanel(fields);
         if (JOptionPane.showConfirmDialog(this, form, "Editar Entrenador", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
             JsonObject body = new JsonObject();
             body.addProperty("especialidad", specField.getText().trim());
             body.addProperty("anios_experiencia", Integer.parseInt(expField.getText().trim()));
             body.addProperty("certificaciones", certField.getText().trim());
+            body.addProperty("biografia", bioField.getText().trim());
             TrainerApiService.getInstance().update(e.getIdEntrenador(), body);
             loadTrainers(model);
         }
     }
 
     private void toggleTrainerStatus(JTable table, DefaultTableModel model, int row) {
-        List<Entrenador> list = adminController.obtenerTodosEntrenadores();
-        if (row >= list.size()) return;
-        int idEntrenador = list.get(row).getIdEntrenador();
-        boolean nuevoEstado = !list.get(row).isActivo();
+        int idEntrenador = (int) model.getValueAt(row, 0);
+        String currentStatus = (String) model.getValueAt(row, 8);
+        boolean nuevoEstado = !"Activo".equals(currentStatus);
         if (adminController.toggleEstadoEntrenador(idEntrenador, nuevoEstado)) {
             loadTrainers(model);
         }
@@ -373,7 +389,10 @@ public class AdminDashboard extends JFrame {
         JTextField emailField = new JTextField();
         JTextField specField = new JTextField();
         JTextField expField = new JTextField("0");
-        Object[] fields = {"Nombre:", nameField, "Apellido:", lastNameField, "Email:", emailField, "Especialidad:", specField, "Experiencia:", expField};
+        JTextField certField = new JTextField();
+        JTextField bioField = new JTextField();
+        JTextField phoneField = new JTextField();
+        Object[] fields = {"Nombre:", nameField, "Apellido:", lastNameField, "Email:", emailField, "Especialidad:", specField, "Experiencia:", expField, "Certificaciones:", certField, "Biografia:", bioField, "Telefono:", phoneField};
         JPanel form = createFormPanel(fields);
 
         if (JOptionPane.showConfirmDialog(this, form, "Nuevo Entrenador", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
@@ -383,7 +402,10 @@ public class AdminDashboard extends JFrame {
             body.addProperty("email", emailField.getText().trim());
             body.addProperty("especialidad", specField.getText().trim());
             body.addProperty("anios_experiencia", Integer.parseInt(expField.getText().trim()));
+            body.addProperty("certificaciones", certField.getText().trim());
+            body.addProperty("biografia", bioField.getText().trim());
             body.addProperty("fecha_nacimiento", LocalDate.now().minusYears(25).toString());
+            body.addProperty("telefono", phoneField.getText().trim());
             TrainerApiService.getInstance().create(body);
             loadTrainers(model);
         }
@@ -650,7 +672,7 @@ public class AdminDashboard extends JFrame {
         delBtn.setBackground(new Color(180, 40, 40));
         delBtn.addActionListener(e -> {
             int row = table.getSelectedRow();
-            if (row >= 0) {
+            if (row >= 0 && JOptionPane.showConfirmDialog(this, "Cancelar esta clase?", "Confirmar", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
                 int id = (int) model.getValueAt(row, 0);
                 if (adminController.eliminarClase(id)) {
                     loadClasses(model);
