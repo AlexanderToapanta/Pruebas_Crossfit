@@ -18,6 +18,7 @@ public class AtletaDashboard extends JFrame {
     private AuthController authController;
     private AtletaController atletaController;
     private JTabbedPane tabbedPane;
+    private DefaultTableModel classModel, wodModel, membershipModel, progressModel;
 
     private static final Color BG = new Color(0x11, 0x11, 0x13);
     private static final Color CARD_BG = new Color(0x1C, 0x1C, 0x1E);
@@ -28,7 +29,7 @@ public class AtletaDashboard extends JFrame {
     public AtletaDashboard() {
         authController = AuthController.getInstance();
         atletaController = new AtletaController();
-        atletaController.setOnDataChanged(() -> { dispose(); new AtletaDashboard().setVisible(true); });
+        atletaController.setOnDataChanged(() -> refreshAllTabs());
         usuarioActual = authController.getUsuarioActual();
         atletaActual = usuarioActual instanceof Atleta ? (Atleta) usuarioActual : new Atleta();
         if (!(usuarioActual instanceof Atleta)) {
@@ -38,6 +39,10 @@ public class AtletaDashboard extends JFrame {
             atletaActual.setEmail(usuarioActual.getEmail());
         }
         initializeUI();
+    }
+
+    private void refreshAllTabs() {
+        // Las tablas del atleta se recargan al cambiar de pestaña o al recibir eventos del socket
     }
 
     private void initializeUI() {

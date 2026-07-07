@@ -21,6 +21,8 @@ public class AdminDashboard extends JFrame {
     private Usuario usuarioActual;
     private JTabbedPane tabbedPane;
     private JLabel totalAthletes, totalTrainers, totalWods, totalMemberships;
+    private DefaultTableModel athleteModel, trainerModel, wodModel, membershipModel, exerciseModel, classModel;
+    private JButton loadWodsBtn;
 
     private static final Color BG = new Color(0x11, 0x11, 0x13);
     private static final Color CARD_BG = new Color(0x1C, 0x1C, 0x1E);
@@ -32,11 +34,19 @@ public class AdminDashboard extends JFrame {
         authController = AuthController.getInstance();
         adminController = new AdminController();
         usuarioActual = authController.getUsuarioActual();
-        adminController.setOnDataChanged(() -> {
-            dispose();
-            new AdminDashboard().setVisible(true);
-        });
+        adminController.setOnDataChanged(() -> refreshAllTabs());
         initializeUI();
+    }
+
+    private void refreshAllTabs() {
+        SwingUtilities.invokeLater(() -> {
+            if (athleteModel != null) loadAthletes(athleteModel);
+            if (trainerModel != null) loadTrainers(trainerModel);
+            if (wodModel != null) loadWods(wodModel, LocalDate.now().getYear(), LocalDate.now().getMonthValue());
+            if (membershipModel != null) loadMemberships(membershipModel);
+            if (exerciseModel != null) loadExercises(exerciseModel);
+            if (classModel != null) loadClasses(classModel);
+        });
     }
 
     private void initializeUI() {
@@ -184,6 +194,7 @@ public class AdminDashboard extends JFrame {
         DefaultTableModel model = new DefaultTableModel(cols, 0) {
             public boolean isCellEditable(int r, int c) { return false; }
         };
+        athleteModel = model;
         JTable table = styledTable(model);
         loadAthletes(model);
 
@@ -314,6 +325,7 @@ public class AdminDashboard extends JFrame {
         DefaultTableModel model = new DefaultTableModel(cols, 0) {
             public boolean isCellEditable(int r, int c) { return false; }
         };
+        trainerModel = model;
         JTable table = styledTable(model);
         loadTrainers(model);
 
@@ -419,6 +431,7 @@ public class AdminDashboard extends JFrame {
         DefaultTableModel model = new DefaultTableModel(cols, 0) {
             public boolean isCellEditable(int r, int c) { return false; }
         };
+        wodModel = model;
         JTable table = styledTable(model);
 
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -514,6 +527,7 @@ public class AdminDashboard extends JFrame {
         DefaultTableModel model = new DefaultTableModel(cols, 0) {
             public boolean isCellEditable(int r, int c) { return false; }
         };
+        membershipModel = model;
         JTable table = styledTable(model);
         loadMemberships(model);
 
@@ -604,6 +618,7 @@ public class AdminDashboard extends JFrame {
         DefaultTableModel model = new DefaultTableModel(cols, 0) {
             public boolean isCellEditable(int r, int c) { return false; }
         };
+        exerciseModel = model;
         JTable table = styledTable(model);
 
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -660,6 +675,7 @@ public class AdminDashboard extends JFrame {
         DefaultTableModel model = new DefaultTableModel(cols, 0) {
             public boolean isCellEditable(int r, int c) { return false; }
         };
+        classModel = model;
         JTable table = styledTable(model);
         loadClasses(model);
 

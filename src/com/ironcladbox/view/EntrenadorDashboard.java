@@ -19,6 +19,7 @@ public class EntrenadorDashboard extends JFrame {
     private AuthController authController;
     private EntrenadorController entrenadorController;
     private JTabbedPane tabbedPane;
+    private DefaultTableModel classModel, wodModel, athleteModel, exerciseModel;
 
     private static final Color BG = new Color(0x11, 0x11, 0x13);
     private static final Color CARD_BG = new Color(0x1C, 0x1C, 0x1E);
@@ -29,10 +30,17 @@ public class EntrenadorDashboard extends JFrame {
     public EntrenadorDashboard() {
         authController = AuthController.getInstance();
         entrenadorController = new EntrenadorController();
-        entrenadorController.setOnDataChanged(() -> { dispose(); new EntrenadorDashboard().setVisible(true); });
+        entrenadorController.setOnDataChanged(() -> refreshAllTabs());
         usuarioActual = authController.getUsuarioActual();
         entrenadorActual = (Entrenador) usuarioActual;
         initializeUI();
+    }
+
+    private void refreshAllTabs() {
+        SwingUtilities.invokeLater(() -> {
+            if (classModel != null) loadClasses(classModel);
+            if (wodModel != null) loadWods(wodModel);
+        });
     }
 
     private void initializeUI() {
@@ -93,6 +101,7 @@ public class EntrenadorDashboard extends JFrame {
         panel.setBackground(BG);
         String[] cols = {"ID", "Nombre", "Dia", "Horario", "Capacidad", "Estado"};
         DefaultTableModel model = new DefaultTableModel(cols, 0) { public boolean isCellEditable(int r, int c) { return false; } };
+        classModel = model;
         JTable table = styledTable(model);
         loadClasses(model);
 
@@ -134,6 +143,7 @@ public class EntrenadorDashboard extends JFrame {
         panel.setBackground(BG);
         String[] cols = {"ID", "Titulo", "Fecha", "Tipo", "Nivel"};
         DefaultTableModel model = new DefaultTableModel(cols, 0) { public boolean isCellEditable(int r, int c) { return false; } };
+        wodModel = model;
         JTable table = styledTable(model);
         loadWods(model);
 
@@ -169,6 +179,7 @@ public class EntrenadorDashboard extends JFrame {
         panel.setBackground(BG);
         String[] cols = {"ID", "Nombre", "Email"};
         DefaultTableModel model = new DefaultTableModel(cols, 0) { public boolean isCellEditable(int r, int c) { return false; } };
+        athleteModel = model;
         try {
             ApiResponse resp = TrainerApiService.getInstance().getMyAthletes();
             if (resp.isOk() && resp.data != null && resp.data.isJsonArray()) {
@@ -188,6 +199,7 @@ public class EntrenadorDashboard extends JFrame {
         panel.setBackground(BG);
         String[] cols = {"ID", "Nombre", "Descripcion"};
         DefaultTableModel model = new DefaultTableModel(cols, 0) { public boolean isCellEditable(int r, int c) { return false; } };
+        exerciseModel = model;
         try {
             ApiResponse resp = ExerciseApiService.getInstance().getAll();
             if (resp.isOk() && resp.data != null && resp.data.isJsonArray()) {
