@@ -13,6 +13,7 @@ import com.ironcladbox.dto.ApiResponse;
 public class AuthController {
     private static AuthController instance;
     private Usuario usuarioActual;
+    private String lastError = "";
     private final AuthApiService authService;
     private final ApiService apiService;
 
@@ -28,10 +29,29 @@ public class AuthController {
         return instance;
     }
 
+    public String getLastError() {
+        return lastError;
+    }
+
     public boolean login(String email, String contrasena) {
+        lastError = "";
         try {
             ApiResponse response = authService.login(email, contrasena);
+
+            if (response.isFromCache()) {
+                lastError = "Sin conexion al servidor. Mostrando datos en cache.";
+                return false;
+            }
+
             if (!response.isOk() || !response.success) {
+                lastError = response.message != null && !response.message.isEmpty()
+                    ? response.message
+                    : "Error de autenticacion (HTTP " + response.statusCode + ")";
+                if (response.statusCode == 401) {
+                    lastError = "Credenciales incorrectas";
+                } else if (response.statusCode == 403) {
+                    lastError = "Acceso denegado. Revisa tu membresia.";
+                }
                 return false;
             }
 
@@ -91,6 +111,7 @@ public class AuthController {
                 return this.usuarioActual != null;
             }
         } catch (Exception e) {
+            lastError = "Error de conexion: " + e.getMessage();
             e.printStackTrace();
         }
         return false;

@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import java.io.IOException;
 import java.nio.file.*;
-import java.time.Instant;
 
 public class CacheService {
     private static CacheService instance;
@@ -18,7 +17,9 @@ public class CacheService {
         this.cacheDir = Paths.get(appData, "IroncladBox", "cache");
         try {
             Files.createDirectories(cacheDir);
-        } catch (IOException ignored) {}
+        } catch (IOException e) {
+            System.err.println("CacheService: No se pudo crear directorio cache: " + e.getMessage());
+        }
     }
 
     public static synchronized CacheService getInstance() {
@@ -33,7 +34,9 @@ public class CacheService {
             envelope.addProperty("data", jsonData);
             Path file = cacheDir.resolve(sanitizeKey(key) + ".json");
             Files.writeString(file, gson.toJson(envelope));
-        } catch (IOException ignored) {}
+        } catch (IOException e) {
+            System.err.println("CacheService.save Error: " + e.getMessage());
+        }
     }
 
     public String get(String key) {
@@ -43,7 +46,9 @@ public class CacheService {
             String content = Files.readString(file);
             JsonObject envelope = gson.fromJson(content, JsonObject.class);
             if (envelope.has("data")) return envelope.get("data").getAsString();
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            System.err.println("CacheService.get Error: " + e.getMessage());
+        }
         return null;
     }
 
@@ -57,6 +62,7 @@ public class CacheService {
             long ageMs = System.currentTimeMillis() - ts;
             return (int)(ageMs / (1000 * 60));
         } catch (Exception e) {
+            System.err.println("CacheService.getAgeMinutes Error: " + e.getMessage());
             return 999999;
         }
     }
@@ -65,8 +71,14 @@ public class CacheService {
         try {
             Files.walk(cacheDir)
                 .filter(Files::isRegularFile)
-                .forEach(f -> { try { Files.delete(f); } catch (IOException ignored) {} });
-        } catch (IOException ignored) {}
+                .forEach(f -> {
+                    try { Files.delete(f); } catch (IOException e) {
+                        System.err.println("CacheService.clear: No se pudo eliminar " + f + ": " + e.getMessage());
+                    }
+                });
+        } catch (IOException e) {
+            System.err.println("CacheService.clear Error: " + e.getMessage());
+        }
     }
 
     private String sanitizeKey(String key) {

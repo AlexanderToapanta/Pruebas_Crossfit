@@ -142,8 +142,13 @@ public class AtletaController {
         return result;
     }
 
-    public void renovarMembresia(int idAtleta, int idNuevaMembresia) {
-        athleteService.updateMyMembership(idNuevaMembresia);
+    public boolean renovarMembresia(int idAtleta, int idNuevaMembresia) {
+        ApiResponse resp = athleteService.updateMyMembership(idNuevaMembresia);
+        if (resp != null && resp.isQueued()) {
+            System.out.println("renovarMembresia: encolado sin conexion");
+            return false;
+        }
+        return resp != null && resp.isOk() && resp.success;
     }
 
     private Clase parseClase(JsonObject json) {

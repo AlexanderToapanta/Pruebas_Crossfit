@@ -125,17 +125,22 @@ public class AdminController {
         return result;
     }
 
-    public void crearMembresia(Membresia membresia) {
+    public boolean crearMembresia(Membresia membresia) {
         JsonObject body = new JsonObject();
         body.addProperty("nombre", membresia.getNombre());
         body.addProperty("descripcion", membresia.getDescripcion() != null ? membresia.getDescripcion() : "");
         body.addProperty("precio", membresia.getPrecio());
         body.addProperty("duracion_dias", membresia.getDuracionDias());
         body.addProperty("beneficios", membresia.getBeneficios() != null ? membresia.getBeneficios() : "");
-        membershipService.create(body);
+        ApiResponse resp = membershipService.create(body);
+        if (resp != null && resp.isQueued()) {
+            System.out.println("crearMembresia: encolado sin conexion");
+            return false;
+        }
+        return resp != null && resp.isOk() && resp.success;
     }
 
-    public void actualizarMembresia(Membresia membresia) {
+    public boolean actualizarMembresia(Membresia membresia) {
         JsonObject body = new JsonObject();
         body.addProperty("nombre", membresia.getNombre());
         body.addProperty("descripcion", membresia.getDescripcion() != null ? membresia.getDescripcion() : "");
@@ -143,27 +148,55 @@ public class AdminController {
         body.addProperty("duracion_dias", membresia.getDuracionDias());
         body.addProperty("beneficios", membresia.getBeneficios() != null ? membresia.getBeneficios() : "");
         body.addProperty("estado", membresia.isActiva());
-        membershipService.update(membresia.getIdMembresia(), body);
+        ApiResponse resp = membershipService.update(membresia.getIdMembresia(), body);
+        if (resp != null && resp.isQueued()) {
+            System.out.println("actualizarMembresia: encolado sin conexion");
+            return false;
+        }
+        return resp != null && resp.isOk() && resp.success;
     }
 
-    public void crearClase(Clase clase) {
+    public boolean crearClase(Clase clase, String fecha) {
         JsonObject body = new JsonObject();
         body.addProperty("nombre", clase.getNombre());
         body.addProperty("descripcion", clase.getDescripcion() != null ? clase.getDescripcion() : "");
         body.addProperty("id_entrenador", clase.getIdEntrenador());
         if (clase.getHorarioInicio() != null) body.addProperty("hora", clase.getHorarioInicio().toString() + ":00");
         body.addProperty("cupo_maximo", clase.getCapacidadMaxima());
-        body.addProperty("fecha", LocalDate.now().toString());
-        classService.create(body);
+        body.addProperty("fecha", fecha != null ? fecha : LocalDate.now().toString());
+        ApiResponse resp = classService.create(body);
+        if (resp != null && resp.isQueued()) {
+            System.out.println("crearClase: encolado sin conexion");
+            return false;
+        }
+        return resp != null && resp.isOk() && resp.success;
     }
 
-    public void actualizarClase(Clase clase) {
+    public boolean crearClase(String nombre, String descripcion, int idEntrenador, String hora, int cupoMaximo, String fecha) {
+        Clase c = new Clase();
+        c.setNombre(nombre);
+        c.setDescripcion(descripcion);
+        c.setIdEntrenador(idEntrenador);
+        c.setCapacidadMaxima(cupoMaximo);
+        return crearClase(c, fecha);
+    }
+
+    public boolean crearClase(Clase clase) {
+        return crearClase(clase, LocalDate.now().toString());
+    }
+
+    public boolean actualizarClase(Clase clase) {
         JsonObject body = new JsonObject();
         body.addProperty("nombre", clase.getNombre());
         body.addProperty("descripcion", clase.getDescripcion() != null ? clase.getDescripcion() : "");
         if (clase.getHorarioInicio() != null) body.addProperty("hora", clase.getHorarioInicio().toString() + ":00");
         body.addProperty("cupo_maximo", clase.getCapacidadMaxima());
-        classService.update(clase.getIdClase(), body);
+        ApiResponse resp = classService.update(clase.getIdClase(), body);
+        if (resp != null && resp.isQueued()) {
+            System.out.println("actualizarClase: encolado sin conexion");
+            return false;
+        }
+        return resp != null && resp.isOk() && resp.success;
     }
 
     public boolean eliminarClase(int idClase) {
@@ -182,13 +215,18 @@ public class AdminController {
         }
     }
 
-    public void actualizarAtleta(Atleta atleta) {
+    public boolean actualizarAtleta(Atleta atleta) {
         JsonObject body = new JsonObject();
         body.addProperty("nombre", atleta.getNombre());
         body.addProperty("apellido", atleta.getApellido());
         body.addProperty("email", atleta.getEmail());
         body.addProperty("telefono", atleta.getTelefono() != null ? atleta.getTelefono() : "");
-        athleteService.update(atleta.getIdAtleta(), body);
+        ApiResponse resp = athleteService.update(atleta.getIdAtleta(), body);
+        if (resp != null && resp.isQueued()) {
+            System.out.println("actualizarAtleta: encolado sin conexion");
+            return false;
+        }
+        return resp != null && resp.isOk() && resp.success;
     }
 
     public boolean eliminarAtleta(int idAtleta) {
@@ -196,12 +234,17 @@ public class AdminController {
         return resp.isOk();
     }
 
-    public void actualizarEntrenador(Entrenador entrenador) {
+    public boolean actualizarEntrenador(Entrenador entrenador) {
         JsonObject body = new JsonObject();
         body.addProperty("especialidad", entrenador.getEspecialidad() != null ? entrenador.getEspecialidad() : "");
         body.addProperty("anios_experiencia", entrenador.getExperienciaAnios());
         body.addProperty("certificaciones", entrenador.getCertificacion() != null ? entrenador.getCertificacion() : "");
-        trainerService.update(entrenador.getIdEntrenador(), body);
+        ApiResponse resp = trainerService.update(entrenador.getIdEntrenador(), body);
+        if (resp != null && resp.isQueued()) {
+            System.out.println("actualizarEntrenador: encolado sin conexion");
+            return false;
+        }
+        return resp != null && resp.isOk() && resp.success;
     }
 
     public boolean eliminarEntrenador(int idEntrenador) {
@@ -234,6 +277,11 @@ public class AdminController {
     }
 
     public void crearSuscripcion(int idAtleta, int idMembresia, LocalDate fechaInicio, LocalDate fechaFin) {
+        JsonObject body = new JsonObject();
+        body.addProperty("id_atleta", idAtleta);
+        body.addProperty("id_membresia", idMembresia);
+        if (fechaInicio != null) body.addProperty("fecha_inicio", fechaInicio.toString());
+        if (fechaFin != null) body.addProperty("fecha_fin", fechaFin.toString());
         membershipService.assign(idAtleta, idMembresia);
     }
 

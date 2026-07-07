@@ -55,6 +55,10 @@ public class ApiService {
                 ApiResponse cachedResp = ApiResponse.fromHttp(200, cached);
                 cachedResp.extras.put("fromCache", true);
                 cachedResp.extras.put("cacheAge", cacheService.getAgeMinutes(url));
+                cachedResp.success = true;
+                JsonObject data = new JsonObject();
+                data.addProperty("message", "Datos desde cache (" + cacheService.getAgeMinutes(url) + " min de antiguedad)");
+                cachedResp.message = "Datos desde cache. Sin conexion al servidor.";
                 return cachedResp;
             }
         }
@@ -91,6 +95,21 @@ public class ApiService {
         return resp;
     }
 
+    public ApiResponse patch(String url, JsonObject body) {
+        ApiResponse resp = request("PATCH", url, body);
+        if (resp.isOk()) {
+            offline = false;
+            drainQueue();
+            return resp;
+        }
+        if (resp.statusCode == 0) {
+            offline = true;
+            queueService.enqueue("PATCH", url, body);
+            return queuedResponse(200, "Guardado localmente. Se sincronizara al reconectar.");
+        }
+        return resp;
+    }
+
     public ApiResponse delete(String url) {
         ApiResponse resp = request("DELETE", url, null);
         if (resp.isOk()) {
@@ -115,6 +134,8 @@ public class ApiService {
                     response = sendHttp("POST", op.url, jsonBody);
                 } else if ("PUT".equals(op.method)) {
                     response = sendHttp("PUT", op.url, jsonBody);
+                } else if ("PATCH".equals(op.method)) {
+                    response = sendHttp("PATCH", op.url, jsonBody);
                 } else if ("DELETE".equals(op.method)) {
                     response = sendHttp("DELETE", op.url, null);
                 } else {
@@ -136,7 +157,12 @@ public class ApiService {
             builder.header("Content-Type", "application/json")
                    .method(method, HttpRequest.BodyPublishers.ofString(jsonBody));
         } else {
-            builder.method(method, HttpRequest.BodyPublishers.noBody());
+            if ("PATCH".equals(method)) {
+                builder.header("Content-Type", "application/json")
+                       .method(method, HttpRequest.BodyPublishers.noBody());
+            } else {
+                builder.method(method, HttpRequest.BodyPublishers.noBody());
+            }
         }
 
         if (authToken != null && !authToken.isEmpty()) {
@@ -149,6 +175,8 @@ public class ApiService {
     private ApiResponse queuedResponse(int status, String msg) {
         ApiResponse resp = ApiResponse.fromHttp(status, "{\"success\":true,\"queued\":true,\"message\":\"" + msg + "\"}");
         resp.extras.put("queued", true);
+        resp.success = false;
+        resp.message = msg + " (sin conexion)";
         return resp;
     }
 
@@ -158,7 +186,8 @@ public class ApiService {
             HttpResponse<String> response = sendHttp(method, url, jsonBody);
             return ApiResponse.fromHttp(response.statusCode(), response.body());
         } catch (Exception e) {
-            return ApiResponse.fromHttp(0, "{\"success\":false,\"message\":\"Error de conexion\"}");
+            System.err.println("ApiService." + method + " Error: " + e.getMessage());
+            return ApiResponse.fromHttp(0, "{\"success\":false,\"message\":\"Error de conexion: " + e.getMessage().replace("\"", "'") + "\"}");
         }
     }
 }

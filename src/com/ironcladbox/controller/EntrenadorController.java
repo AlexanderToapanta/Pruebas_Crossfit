@@ -52,10 +52,7 @@ public class EntrenadorController {
     public List<Clase> obtenerMisClases(int idEntrenador) {
         List<Clase> result = new ArrayList<>();
         try {
-            ApiResponse resp = classService.getEnrolledStudents(idEntrenador);
-            if (!resp.isOk()) {
-                resp = trainerService.getMyClasses();
-            }
+            ApiResponse resp = trainerService.getMyClasses();
             if (resp.isOk() && resp.data != null && resp.data.isJsonArray()) {
                 JsonArray arr = resp.data.getAsJsonArray();
                 for (JsonElement e : arr) {
@@ -75,28 +72,35 @@ public class EntrenadorController {
         return new ArrayList<>();
     }
 
-    public void crearClase(Clase clase) {
+    public boolean crearClase(Clase clase, String fecha) {
         JsonObject body = new JsonObject();
         body.addProperty("nombre", clase.getNombre());
         body.addProperty("descripcion", clase.getDescripcion() != null ? clase.getDescripcion() : "");
         body.addProperty("id_entrenador", clase.getIdEntrenador());
         if (clase.getHorarioInicio() != null) body.addProperty("hora", clase.getHorarioInicio().toString() + ":00");
         body.addProperty("cupo_maximo", clase.getCapacidadMaxima());
-        body.addProperty("fecha", LocalDate.now().toString());
-        classService.create(body);
+        body.addProperty("fecha", fecha != null ? fecha : LocalDate.now().toString());
+        ApiResponse resp = classService.create(body);
+        return resp != null && resp.isOk() && resp.success;
     }
 
-    public void actualizarClase(Clase clase) {
+    public boolean crearClase(Clase clase) {
+        return crearClase(clase, LocalDate.now().toString());
+    }
+
+    public boolean actualizarClase(Clase clase) {
         JsonObject body = new JsonObject();
         body.addProperty("nombre", clase.getNombre());
         body.addProperty("descripcion", clase.getDescripcion() != null ? clase.getDescripcion() : "");
         if (clase.getHorarioInicio() != null) body.addProperty("hora", clase.getHorarioInicio().toString() + ":00");
         body.addProperty("cupo_maximo", clase.getCapacidadMaxima());
-        classService.update(clase.getIdClase(), body);
+        ApiResponse resp = classService.update(clase.getIdClase(), body);
+        return resp != null && resp.isOk() && resp.success;
     }
 
-    public void eliminarClase(int idClase) {
-        classService.delete(idClase);
+    public boolean eliminarClase(int idClase) {
+        ApiResponse resp = classService.delete(idClase);
+        return resp != null && resp.isOk() && resp.success;
     }
 
     public List<Clase> obtenerClasesPorDia(String dia) {

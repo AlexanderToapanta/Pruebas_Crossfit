@@ -23,7 +23,9 @@ public class SyncQueueService {
         try {
             Files.createDirectories(queueFile.getParent());
             loadFromDisk();
-        } catch (IOException ignored) {}
+        } catch (IOException e) {
+            System.err.println("SyncQueueService: No se pudo inicializar: " + e.getMessage());
+        }
     }
 
     public static synchronized SyncQueueService getInstance() {
@@ -42,6 +44,7 @@ public class SyncQueueService {
     public void enqueue(String method, String url, JsonObject body) {
         queue.add(new PendingOperation(method, url, body, System.currentTimeMillis()));
         saveToDisk();
+        System.out.println("SyncQueue: operacion " + method + " encolada. Total pendientes: " + queue.size());
     }
 
     public boolean processQueue(java.util.function.Function<PendingOperation, Boolean> executor) {
@@ -53,6 +56,7 @@ public class SyncQueueService {
                 boolean ok = executor.apply(op);
                 if (!ok) failed.add(op);
             } catch (Exception e) {
+                System.err.println("SyncQueue: fallo al procesar " + op.method + " " + op.url + ": " + e.getMessage());
                 failed.add(op);
             }
         }
@@ -65,6 +69,7 @@ public class SyncQueueService {
         }
 
         saveToDisk();
+        System.out.println("SyncQueue: cola procesada exitosamente");
         return true;
     }
 
@@ -85,7 +90,9 @@ public class SyncQueueService {
                 arr.add(json);
             }
             Files.writeString(queueFile, gson.toJson(arr));
-        } catch (IOException ignored) {}
+        } catch (IOException e) {
+            System.err.println("SyncQueueService.saveToDisk Error: " + e.getMessage());
+        }
     }
 
     private void loadFromDisk() {
@@ -102,7 +109,10 @@ public class SyncQueueService {
                     json.get("timestamp").getAsLong()
                 ));
             }
-        } catch (Exception ignored) {}
+            System.out.println("SyncQueue: cargadas " + queue.size() + " operaciones pendientes del disco");
+        } catch (Exception e) {
+            System.err.println("SyncQueueService.loadFromDisk Error: " + e.getMessage());
+        }
     }
 
     public static class PendingOperation {

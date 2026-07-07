@@ -86,6 +86,10 @@ public class ApiResponse {
         return extras.containsKey("fromCache") && Boolean.TRUE.equals(extras.get("fromCache"));
     }
 
+    public boolean isQueued() {
+        return extras.containsKey("queued") && Boolean.TRUE.equals(extras.get("queued"));
+    }
+
     public int getCacheAgeMinutes() {
         Object age = extras.get("cacheAge");
         return age instanceof Integer ? (Integer) age : 0;
