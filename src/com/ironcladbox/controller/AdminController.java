@@ -137,6 +137,7 @@ public class AdminController {
             System.out.println("crearMembresia: encolado sin conexion");
             return false;
         }
+        if (resp != null && resp.isOk() && resp.success) notifyChange();
         return resp != null && resp.isOk() && resp.success;
     }
 
@@ -153,6 +154,7 @@ public class AdminController {
             System.out.println("actualizarMembresia: encolado sin conexion");
             return false;
         }
+        if (resp != null && resp.isOk() && resp.success) notifyChange();
         return resp != null && resp.isOk() && resp.success;
     }
 
@@ -169,6 +171,7 @@ public class AdminController {
             System.out.println("crearClase: encolado sin conexion");
             return false;
         }
+        if (resp != null && resp.isOk() && resp.success) notifyChange();
         return resp != null && resp.isOk() && resp.success;
     }
 
@@ -196,11 +199,13 @@ public class AdminController {
             System.out.println("actualizarClase: encolado sin conexion");
             return false;
         }
+        if (resp != null && resp.isOk() && resp.success) notifyChange();
         return resp != null && resp.isOk() && resp.success;
     }
 
     public boolean eliminarClase(int idClase) {
         ApiResponse resp = classService.delete(idClase);
+        if (resp != null && resp.isOk()) notifyChange();
         return resp.isOk();
     }
 
@@ -226,11 +231,13 @@ public class AdminController {
             System.out.println("actualizarAtleta: encolado sin conexion");
             return false;
         }
+        if (resp != null && resp.isOk() && resp.success) notifyChange();
         return resp != null && resp.isOk() && resp.success;
     }
 
     public boolean eliminarAtleta(int idAtleta) {
         ApiResponse resp = athleteService.delete(idAtleta);
+        if (resp != null && resp.isOk()) notifyChange();
         return resp.isOk();
     }
 
@@ -244,11 +251,13 @@ public class AdminController {
             System.out.println("actualizarEntrenador: encolado sin conexion");
             return false;
         }
+        if (resp != null && resp.isOk() && resp.success) notifyChange();
         return resp != null && resp.isOk() && resp.success;
     }
 
     public boolean eliminarEntrenador(int idEntrenador) {
         ApiResponse resp = trainerService.delete(idEntrenador);
+        if (resp != null && resp.isOk()) notifyChange();
         return resp.isOk();
     }
 
@@ -339,16 +348,19 @@ public class AdminController {
         JsonObject body = new JsonObject();
         body.addProperty("activo", activo);
         ApiResponse resp = athleteService.updateStatus(idAtleta, activo);
+        if (resp != null && resp.isOk()) notifyChange();
         return resp.isOk();
     }
 
     public boolean toggleEstadoEntrenador(int idEntrenador, boolean activo) {
         ApiResponse resp = trainerService.updateStatus(idEntrenador, activo);
+        if (resp != null && resp.isOk()) notifyChange();
         return resp.isOk();
     }
 
     public boolean asignarMembresia(int idAtleta, int idMembresia) {
         ApiResponse resp = membershipService.assign(idAtleta, idMembresia);
+        if (resp != null && resp.isOk()) notifyChange();
         return resp.isOk();
     }
 

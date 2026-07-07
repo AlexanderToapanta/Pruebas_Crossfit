@@ -81,6 +81,7 @@ public class EntrenadorController {
         body.addProperty("cupo_maximo", clase.getCapacidadMaxima());
         body.addProperty("fecha", fecha != null ? fecha : LocalDate.now().toString());
         ApiResponse resp = classService.create(body);
+        if (resp != null && resp.isOk() && resp.success) notifyChange();
         return resp != null && resp.isOk() && resp.success;
     }
 
@@ -95,11 +96,13 @@ public class EntrenadorController {
         if (clase.getHorarioInicio() != null) body.addProperty("hora", clase.getHorarioInicio().toString() + ":00");
         body.addProperty("cupo_maximo", clase.getCapacidadMaxima());
         ApiResponse resp = classService.update(clase.getIdClase(), body);
+        if (resp != null && resp.isOk() && resp.success) notifyChange();
         return resp != null && resp.isOk() && resp.success;
     }
 
     public boolean eliminarClase(int idClase) {
         ApiResponse resp = classService.delete(idClase);
+        if (resp != null && resp.isOk() && resp.success) notifyChange();
         return resp != null && resp.isOk() && resp.success;
     }
 

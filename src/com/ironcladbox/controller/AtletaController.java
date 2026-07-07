@@ -148,6 +148,7 @@ public class AtletaController {
             System.out.println("renovarMembresia: encolado sin conexion");
             return false;
         }
+        if (resp != null && resp.isOk() && resp.success) notifyChange();
         return resp != null && resp.isOk() && resp.success;
     }
 
