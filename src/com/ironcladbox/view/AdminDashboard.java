@@ -190,7 +190,7 @@ public class AdminDashboard extends JFrame {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(BG);
 
-        String[] cols = {"ID", "Nombre", "Apellido", "Email", "Telefono", "Direccion", "Emergencia", "Membresia", "Vigencia", "Estado"};
+        String[] cols = {"ID", "Nombre", "Apellido", "Email", "Telefono", "Membresia", "Vigencia", "Estado"};
         DefaultTableModel model = new DefaultTableModel(cols, 0) {
             public boolean isCellEditable(int r, int c) { return false; }
         };
@@ -230,7 +230,7 @@ public class AdminDashboard extends JFrame {
         List<Atleta> list = adminController.obtenerTodosAtletas();
         for (Atleta a : list) {
             model.addRow(new Object[]{a.getIdAtleta(), a.getNombre(), a.getApellido(), a.getEmail(),
-                a.getTelefono() != null ? a.getTelefono() : "", "", "",
+                a.getTelefono() != null ? a.getTelefono() : "", 
                 a.getNombreMembresia() != null ? a.getNombreMembresia() : "Sin membresia",
                 a.getVigenciaMembresia(),
                 a.isActivo() ? "Activo" : "Inactivo"});
