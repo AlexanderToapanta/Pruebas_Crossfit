@@ -202,8 +202,9 @@ public class AdminDashboard extends JFrame {
             int row = table.getSelectedRow();
             if (row >= 0) {
                 int id = (int) model.getValueAt(row, 0);
-                adminController.eliminarAtleta(id);
-                model.removeRow(row);
+                if (adminController.eliminarAtleta(id)) {
+                    model.removeRow(row);
+                }
             }
         });
         btnPanel.add(addBtn); btnPanel.add(editBtn); btnPanel.add(delBtn);
@@ -288,8 +289,9 @@ public class AdminDashboard extends JFrame {
             int row = table.getSelectedRow();
             if (row >= 0) {
                 int id = (int) model.getValueAt(row, 0);
-                adminController.eliminarEntrenador(id);
-                model.removeRow(row);
+                if (adminController.eliminarEntrenador(id)) {
+                    model.removeRow(row);
+                }
             }
         });
         btnPanel.add(addBtn); btnPanel.add(delBtn);
@@ -550,8 +552,9 @@ public class AdminDashboard extends JFrame {
             int row = table.getSelectedRow();
             if (row >= 0) {
                 int id = (int) model.getValueAt(row, 0);
-                adminController.eliminarClase(id);
-                loadClasses(model);
+                if (adminController.eliminarClase(id)) {
+                    loadClasses(model);
+                }
             }
         });
         btnPanel.add(addBtn); btnPanel.add(delBtn);

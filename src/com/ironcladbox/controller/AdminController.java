@@ -166,8 +166,9 @@ public class AdminController {
         classService.update(clase.getIdClase(), body);
     }
 
-    public void eliminarClase(int idClase) {
-        classService.delete(idClase);
+    public boolean eliminarClase(int idClase) {
+        ApiResponse resp = classService.delete(idClase);
+        return resp.isOk();
     }
 
     public void desactivarUsuario(int idUsuario) {
@@ -190,8 +191,9 @@ public class AdminController {
         athleteService.update(atleta.getIdAtleta(), body);
     }
 
-    public void eliminarAtleta(int idAtleta) {
-        athleteService.delete(idAtleta);
+    public boolean eliminarAtleta(int idAtleta) {
+        ApiResponse resp = athleteService.delete(idAtleta);
+        return resp.isOk();
     }
 
     public void actualizarEntrenador(Entrenador entrenador) {
@@ -202,8 +204,9 @@ public class AdminController {
         trainerService.update(entrenador.getIdEntrenador(), body);
     }
 
-    public void eliminarEntrenador(int idEntrenador) {
-        trainerService.delete(idEntrenador);
+    public boolean eliminarEntrenador(int idEntrenador) {
+        ApiResponse resp = trainerService.delete(idEntrenador);
+        return resp.isOk();
     }
 
     public int getTotalAtletas() {
