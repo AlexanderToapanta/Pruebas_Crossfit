@@ -1,7 +1,5 @@
 package com.ironcladbox.model;
 
-import java.time.LocalDateTime;
-
 public class Membresia {
     private int idMembresia;
     private String nombre;
@@ -10,7 +8,6 @@ public class Membresia {
     private int duracionDias;
     private String beneficios;
     private boolean activa;
-    private LocalDateTime fechaCreacion;
 
     public Membresia() {
     }
@@ -22,7 +19,6 @@ public class Membresia {
         this.duracionDias = duracionDias;
         this.beneficios = beneficios;
         this.activa = true;
-        this.fechaCreacion = LocalDateTime.now();
     }
 
     public int getIdMembresia() {
@@ -79,14 +75,6 @@ public class Membresia {
 
     public void setActiva(boolean activa) {
         this.activa = activa;
-    }
-
-    public LocalDateTime getFechaCreacion() {
-        return fechaCreacion;
-    }
-
-    public void setFechaCreacion(LocalDateTime fechaCreacion) {
-        this.fechaCreacion = fechaCreacion;
     }
 
     @Override

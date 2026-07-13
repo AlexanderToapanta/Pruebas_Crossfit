@@ -51,4 +51,8 @@ public class MembershipApiService {
     public ApiResponse getStats() {
         return api.get(ApiConfig.ADMIN_STATS);
     }
+
+    public ApiResponse deactivateExpired() {
+        return api.post(ApiConfig.ADMIN_MEMBERSHIPS_DEACTIVATE, new JsonObject());
+    }
 }

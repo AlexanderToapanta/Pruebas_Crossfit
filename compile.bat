@@ -3,21 +3,19 @@ echo Compilando IroncladBox CrossFit...
 echo ==================================
 if exist bin rmdir /s /q bin
 mkdir bin
+
 echo Compilando todas las clases...
-(for /r src %%f in (*.java) do echo "%%f") > sources.txt
-javac -encoding UTF-8 -d bin -cp "lib\*" @sources.txt
-del sources.txt
+powershell -Command "$files = Get-ChildItem -Path src -Recurse -Filter *.java | ForEach-Object { $_.FullName }; & javac -encoding UTF-8 -d bin -cp 'lib\*' $files"
+
 if %errorlevel% neq 0 (
     echo ERROR en compilacion
     pause
     exit /b 1
 )
-echo Copiando imagenes y recursos...
+
+echo Copiando imagenes...
 if exist src\com\ironcladbox\images (
     xcopy /Y /I "src\com\ironcladbox\images\*" "bin\com\ironcladbox\images\" 2>nul
-)
-if exist resources (
-    xcopy /Y /E resources\* bin\ 2>nul
 )
 echo ==================================
 echo Compilacion exitosa!

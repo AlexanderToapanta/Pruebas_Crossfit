@@ -58,4 +58,14 @@ public class ClassApiService {
     public ApiResponse getEnrolledStudents(int id) {
         return api.get(ApiConfig.CLASSES + "/" + id + "/students");
     }
+
+    public ApiResponse deletePermanently(int id) {
+        return api.delete(ApiConfig.ADMIN_CLASSES + "/" + id + "/permanent");
+    }
+
+    public ApiResponse reactivate(int id) {
+        JsonObject body = new JsonObject();
+        body.addProperty("estado", "ACTIVA");
+        return api.put(ApiConfig.ADMIN_CLASSES + "/" + id + "/reactivate", body);
+    }
 }

@@ -76,4 +76,8 @@ public class WodApiService {
     public ApiResponse getSchedulesByWod(int idWod) {
         return api.get(ApiConfig.WOD + "/" + idWod + "/schedules");
     }
+
+    public ApiResponse getHistorialAsistencias() {
+        return api.get(ApiConfig.WOD_HISTORIAL_ASISTENCIAS + "?limit=20");
+    }
 }

@@ -1,7 +1,29 @@
 package com.ironcladbox.config;
 
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.util.Properties;
+
 public class ApiConfig {
-    public static final String BASE_URL = "http://10.40.22.167:3000";
+    private static String baseUrl = loadBaseUrl();
+
+    private static String loadBaseUrl() {
+        try {
+            Properties props = new Properties();
+            InputStream input = new FileInputStream("config.properties");
+            props.load(input);
+            input.close();
+            String url = props.getProperty("API_BASE_URL");
+            if (url != null && !url.trim().isEmpty()) {
+                return url.trim();
+            }
+        } catch (Exception e) {
+            System.out.println("No se encontro config.properties, usando IP por defecto");
+        }
+        return "http://192.168.100.75:3000";
+    }
+
+    public static final String BASE_URL = baseUrl;
 
     public static final String AUTH_LOGIN = BASE_URL + "/api/auth/login";
     public static final String AUTH_REGISTER = BASE_URL + "/api/auth/register";
@@ -22,12 +44,14 @@ public class ApiConfig {
     public static final String ADMIN_ATHLETES = BASE_URL + "/api/admin/athletes";
     public static final String ADMIN_STATS = BASE_URL + "/api/admin/stats";
     public static final String ADMIN_ASSIGN_MEMBERSHIP = BASE_URL + "/api/admin/memberships/assign";
+    public static final String ADMIN_MEMBERSHIPS_DEACTIVATE = BASE_URL + "/api/admin/memberships/deactivate-expired";
 
     public static final String WOD_CALENDAR = BASE_URL + "/api/wod/calendar";
     public static final String WOD = BASE_URL + "/api/wod";
     public static final String WOD_MY_SCHEDULES = BASE_URL + "/api/wod/my-schedules";
     public static final String WOD_RACHA = BASE_URL + "/api/wod/racha";
     public static final String WOD_ASISTENCIA = BASE_URL + "/api/wod/asistencia";
+    public static final String WOD_HISTORIAL_ASISTENCIAS = BASE_URL + "/api/wod/historial-asistencias";
 
     public static final String CLASSES = BASE_URL + "/api/classes";
     public static final String CLASSES_AVAILABLE = BASE_URL + "/api/classes/available";

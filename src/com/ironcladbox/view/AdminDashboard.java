@@ -20,9 +20,8 @@ public class AdminDashboard extends JFrame {
     private AuthController authController;
     private Usuario usuarioActual;
     private JTabbedPane tabbedPane;
-    private JLabel totalAthletes, totalTrainers, totalWods, totalMemberships;
-    private DefaultTableModel athleteModel, trainerModel, wodModel, membershipModel, exerciseModel, classModel;
-    private JButton loadWodsBtn;
+    private JLabel totalAthletes, activeAthletes, totalTrainers, totalWods, totalMemberships;
+    private DefaultTableModel athleteModel, trainerModel, membershipModel, exerciseModel, classModel;
 
     private static final Color BG = new Color(0x11, 0x11, 0x13);
     private static final Color CARD_BG = new Color(0x1C, 0x1C, 0x1E);
@@ -43,7 +42,7 @@ public class AdminDashboard extends JFrame {
         SwingUtilities.invokeLater(() -> {
             if (athleteModel != null) loadAthletes(athleteModel);
             if (trainerModel != null) loadTrainers(trainerModel);
-            if (wodModel != null) loadWods(wodModel, LocalDate.now().getYear(), LocalDate.now().getMonthValue());
+            refreshWodCalendar();
             if (membershipModel != null) loadMemberships(membershipModel);
             if (exerciseModel != null) loadExercises(exerciseModel);
             if (classModel != null) loadClasses(classModel);
@@ -114,16 +113,18 @@ public class AdminDashboard extends JFrame {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(BG);
 
-        JPanel statsPanel = new JPanel(new GridLayout(1, 4, 12, 0));
+        JPanel statsPanel = new JPanel(new GridLayout(1, 5, 12, 0));
         statsPanel.setBackground(BG);
         statsPanel.setBorder(BorderFactory.createEmptyBorder(30, 20, 20, 20));
 
         totalAthletes = statLabel("0");
+        activeAthletes = statLabel("0");
         totalTrainers = statLabel("0");
         totalWods = statLabel("0");
         totalMemberships = statLabel("0");
 
         statsPanel.add(statCard("Atletas", totalAthletes, "👥"));
+        statsPanel.add(statCard("Activos", activeAthletes, "✅"));
         statsPanel.add(statCard("Entrenadores", totalTrainers, "🏅"));
         statsPanel.add(statCard("WODs", totalWods, "🏋️"));
         statsPanel.add(statCard("Membresias", totalMemberships, "💳"));
@@ -146,12 +147,14 @@ public class AdminDashboard extends JFrame {
             if (resp.isOk() && resp.data != null && resp.data.isJsonObject()) {
                 JsonObject s = resp.data.getAsJsonObject();
                 totalAthletes.setText(String.valueOf(s.has("totalAthletes") ? s.get("totalAthletes").getAsInt() : 0));
+                activeAthletes.setText(String.valueOf(s.has("activeAthletes") ? s.get("activeAthletes").getAsInt() : 0));
                 totalTrainers.setText(String.valueOf(s.has("totalTrainers") ? s.get("totalTrainers").getAsInt() : 0));
                 totalWods.setText(String.valueOf(s.has("totalWODs") ? s.get("totalWODs").getAsInt() : 0));
                 totalMemberships.setText(String.valueOf(s.has("totalMemberships") ? s.get("totalMemberships").getAsInt() : 0));
             }
         } catch (Exception e) {
             totalAthletes.setText("--");
+            activeAthletes.setText("--");
             totalTrainers.setText("--");
             totalWods.setText("--");
             totalMemberships.setText("--");
@@ -186,7 +189,10 @@ public class AdminDashboard extends JFrame {
         return card;
     }
 
-    // ============ TAB: ATLETAS ============
+        // ============ TAB: ATLETAS ============
+    private javax.swing.JTextField athleteSearchField;
+    private javax.swing.JCheckBox expiredCheck;
+    
     private JPanel createAthletesTab() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(BG);
@@ -197,7 +203,32 @@ public class AdminDashboard extends JFrame {
         };
         athleteModel = model;
         JTable table = styledTable(model);
+        setColumnWidths(table, new int[]{40, 80, 80, 140, 80, 100, 70, 50});
         loadAthletes(model);
+
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setBackground(BG);
+        athleteSearchField = new JTextField();
+        athleteSearchField.setBackground(CARD_BG);
+        athleteSearchField.setForeground(Color.WHITE);
+        athleteSearchField.setCaretColor(Color.WHITE);
+        athleteSearchField.addActionListener(e -> loadAthletes(model));
+        athleteSearchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            void update() { loadAthletes(model); }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { update(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { update(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { update(); }
+        });
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        searchPanel.setBackground(BG);
+        athleteSearchField.setPreferredSize(new Dimension(300, 28));
+        searchPanel.add(athleteSearchField);
+        expiredCheck = new JCheckBox("Solo vencidas");
+        expiredCheck.setBackground(BG);
+        expiredCheck.setForeground(Color.WHITE);
+        expiredCheck.addActionListener(e -> loadAthletes(model));
+        searchPanel.add(expiredCheck);
+        topPanel.add(searchPanel, BorderLayout.WEST);
 
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         btnPanel.setBackground(BG);
@@ -218,18 +249,43 @@ public class AdminDashboard extends JFrame {
                 if (adminController.eliminarAtleta(id)) { model.removeRow(row); }
             }
         });
-        btnPanel.add(addBtn); btnPanel.add(editBtn); btnPanel.add(memberBtn); btnPanel.add(statusBtn); btnPanel.add(delBtn);
-        btnPanel.add(addBtn); btnPanel.add(editBtn); btnPanel.add(delBtn);
+        JButton deactivateBtn = actionBtn("Desactivar Vencidos");
+        deactivateBtn.setBackground(new Color(180, 100, 0));
+        deactivateBtn.addActionListener(e -> {
+            if (JOptionPane.showConfirmDialog(this, "Desactivar todos los atletas con membresia vencida?", "Confirmar", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+                ApiResponse resp = MembershipApiService.getInstance().deactivateExpired();
+                if (resp != null && resp.isOk()) {
+                    JOptionPane.showMessageDialog(this, "Atletas vencidos desactivados.");
+                } else {
+                    JOptionPane.showMessageDialog(this, "Error al desactivar: " + (resp != null ? resp.message : ""), "Error", JOptionPane.ERROR_MESSAGE);
+                }
+                loadAthletes(model);
+            }
+        });
+        btnPanel.add(addBtn); btnPanel.add(editBtn); btnPanel.add(memberBtn); btnPanel.add(statusBtn); btnPanel.add(delBtn); btnPanel.add(deactivateBtn);
 
-        panel.add(new JScrollPane(table), BorderLayout.CENTER);
+        panel.add(topPanel, BorderLayout.NORTH);
+        panel.add(wrapTable(table), BorderLayout.CENTER);
         panel.add(btnPanel, BorderLayout.SOUTH);
         return panel;
     }
 
     private void loadAthletes(DefaultTableModel model) {
         model.setRowCount(0);
+        String search = athleteSearchField != null ? athleteSearchField.getText().trim().toLowerCase() : "";
+        boolean onlyExpired = expiredCheck != null && expiredCheck.isSelected();
         List<Atleta> list = adminController.obtenerTodosAtletas();
         for (Atleta a : list) {
+            if (onlyExpired && !"Vencida".equals(a.getVigenciaMembresia())) continue;
+            if (!search.isEmpty()) {
+                String nombre = (a.getNombre() != null ? a.getNombre() : "").toLowerCase();
+                String apellido = (a.getApellido() != null ? a.getApellido() : "").toLowerCase();
+                String email = (a.getEmail() != null ? a.getEmail() : "").toLowerCase();
+                String membersh = (a.getNombreMembresia() != null ? a.getNombreMembresia() : "").toLowerCase();
+                if (!nombre.contains(search) && !apellido.contains(search) && !email.contains(search) && !membersh.contains(search)) {
+                    continue;
+                }
+            }
             model.addRow(new Object[]{a.getIdAtleta(), a.getNombre(), a.getApellido(), a.getEmail(),
                 a.getTelefono() != null ? a.getTelefono() : "", 
                 a.getNombreMembresia() != null ? a.getNombreMembresia() : "Sin membresia",
@@ -282,9 +338,11 @@ public class AdminDashboard extends JFrame {
         JTextField lastNameField = new JTextField(a.getApellido());
         JTextField emailField = new JTextField(a.getEmail());
         JTextField phoneField = new JTextField(a.getTelefono() != null ? a.getTelefono() : "");
+        JTextField pesoField = new JTextField(a.getPeso() > 0 ? String.valueOf(a.getPeso()) : "");
+        JTextField alturaField = new JTextField(a.getAltura() > 0 ? String.valueOf(a.getAltura()) : "");
         JTextField dirField = new JTextField("");
         JTextField emergField = new JTextField("");
-        Object[] fields = {"Nombre:", nameField, "Apellido:", lastNameField, "Email:", emailField, "Telefono:", phoneField, "Direccion:", dirField, "Emergencia:", emergField};
+        Object[] fields = {"Nombre:", nameField, "Apellido:", lastNameField, "Email:", emailField, "Telefono:", phoneField, "Peso:", pesoField, "Altura:", alturaField, "Direccion:", dirField, "Emergencia:", emergField};
         JPanel form = createFormPanel(fields);
 
         if (JOptionPane.showConfirmDialog(this, form, "Editar Atleta", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
@@ -293,6 +351,8 @@ public class AdminDashboard extends JFrame {
             body.addProperty("apellido", lastNameField.getText().trim());
             body.addProperty("email", emailField.getText().trim());
             body.addProperty("telefono", phoneField.getText().trim());
+            body.addProperty("peso", pesoField.getText().trim());
+            body.addProperty("altura", alturaField.getText().trim());
             body.addProperty("direccion", dirField.getText().trim());
             body.addProperty("contacto_emergencia", emergField.getText().trim());
             ApiResponse resp = AthleteApiService.getInstance().update(a.getIdAtleta(), body);
@@ -320,7 +380,7 @@ public class AdminDashboard extends JFrame {
 
     private void toggleAthleteStatus(JTable table, DefaultTableModel model, int row) {
         int idAtleta = (int) model.getValueAt(row, 0);
-        String currentStatus = (String) model.getValueAt(row, 9);
+        String currentStatus = (String) model.getValueAt(row, 7);
         boolean nuevoEstado = !"Activo".equals(currentStatus);
         if (adminController.toggleEstadoAtleta(idAtleta, nuevoEstado)) {
             loadAthletes(model);
@@ -328,6 +388,8 @@ public class AdminDashboard extends JFrame {
     }
 
     // ============ TAB: ENTRENADORES ============
+    private javax.swing.JTextField trainerSearchField;
+    
     private JPanel createTrainersTab() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(BG);
@@ -338,7 +400,27 @@ public class AdminDashboard extends JFrame {
         };
         trainerModel = model;
         JTable table = styledTable(model);
+        setColumnWidths(table, new int[]{40, 100, 100, 160, 120, 50, 160, 100, 60});
         loadTrainers(model);
+
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setBackground(BG);
+        trainerSearchField = new JTextField();
+        trainerSearchField.setBackground(CARD_BG);
+        trainerSearchField.setForeground(Color.WHITE);
+        trainerSearchField.setCaretColor(Color.WHITE);
+        trainerSearchField.addActionListener(e -> loadTrainers(model));
+        trainerSearchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            void update() { loadTrainers(model); }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { update(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { update(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { update(); }
+        });
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        searchPanel.setBackground(BG);
+        trainerSearchField.setPreferredSize(new Dimension(300, 28));
+        searchPanel.add(trainerSearchField);
+        topPanel.add(searchPanel, BorderLayout.WEST);
 
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         btnPanel.setBackground(BG);
@@ -359,14 +441,25 @@ public class AdminDashboard extends JFrame {
         });
         btnPanel.add(addBtn); btnPanel.add(editBtn); btnPanel.add(statusBtn); btnPanel.add(delBtn);
 
-        panel.add(new JScrollPane(table), BorderLayout.CENTER);
+        panel.add(topPanel, BorderLayout.NORTH);
+        panel.add(wrapTable(table), BorderLayout.CENTER);
         panel.add(btnPanel, BorderLayout.SOUTH);
         return panel;
     }
 
     private void loadTrainers(DefaultTableModel model) {
         model.setRowCount(0);
+        String search = trainerSearchField != null ? trainerSearchField.getText().trim().toLowerCase() : "";
         for (Entrenador e : adminController.obtenerTodosEntrenadores()) {
+            if (!search.isEmpty()) {
+                String nombre = (e.getNombre() != null ? e.getNombre() : "").toLowerCase();
+                String apellido = (e.getApellido() != null ? e.getApellido() : "").toLowerCase();
+                String email = (e.getEmail() != null ? e.getEmail() : "").toLowerCase();
+                String esp = (e.getEspecialidad() != null ? e.getEspecialidad() : "").toLowerCase();
+                if (!nombre.contains(search) && !apellido.contains(search) && !email.contains(search) && !esp.contains(search)) {
+                    continue;
+                }
+            }
             model.addRow(new Object[]{e.getIdEntrenador(), e.getNombre(), e.getApellido(), e.getEmail(),
                 e.getEspecialidad() != null ? e.getEspecialidad() : "", e.getExperienciaAnios(),
                 e.getCertificacion() != null ? e.getCertificacion() : "",
@@ -383,13 +476,14 @@ public class AdminDashboard extends JFrame {
         JTextField expField = new JTextField(String.valueOf(e.getExperienciaAnios()));
         JTextField certField = new JTextField(e.getCertificacion() != null ? e.getCertificacion() : "");
         JTextField phoneField = new JTextField(e.getTelefono() != null ? e.getTelefono() : "");
-        JTextField bioField = new JTextField("");
+        JTextField bioField = new JTextField(e.getBiografia() != null ? e.getBiografia() : "");
         Object[] fields = {"Especialidad:", specField, "Experiencia:", expField, "Certificaciones:", certField, "Telefono:", phoneField, "Biografia:", bioField};
         JPanel form = createFormPanel(fields);
         if (JOptionPane.showConfirmDialog(this, form, "Editar Entrenador", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
             e.setEspecialidad(specField.getText().trim());
             e.setExperienciaAnios(Integer.parseInt(expField.getText().trim()));
             e.setCertificacion(certField.getText().trim());
+            e.setTelefono(phoneField.getText().trim());
             e.setBiografia(bioField.getText().trim());
             adminController.actualizarEntrenador(e);
             loadTrainers(model);
@@ -444,83 +538,257 @@ public class AdminDashboard extends JFrame {
     }
 
     // ============ TAB: WODs ============
+    private java.time.LocalDate wodCurrentMonth = java.time.LocalDate.now().withDayOfMonth(1);
+    private java.time.LocalDate wodSelectedDay = java.time.LocalDate.now();
+    private JPanel wodDetailPanel;
+    private JPanel wodCalendarPanel;
+    private DefaultTableModel wodScheduleModel;
+    
     private JPanel createWodsTab() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(BG);
 
-        String[] cols = {"ID", "Titulo", "Fecha", "Tipo", "Nivel"};
-        DefaultTableModel model = new DefaultTableModel(cols, 0) {
-            public boolean isCellEditable(int r, int c) { return false; }
-        };
-        wodModel = model;
-        JTable table = styledTable(model);
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBackground(BG);
 
-        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        topPanel.setBackground(BG);
-        JComboBox<String> monthBox = new JComboBox<>(new String[]{"Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"});
-        monthBox.setSelectedIndex(LocalDate.now().getMonthValue() - 1);
-        JButton loadBtn = actionBtn("Cargar WODs");
-        JButton addBtn = actionBtn("+ Nuevo WOD");
+        JPanel navPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        navPanel.setBackground(BG);
+        JButton prevBtn = new JButton("<");
+        prevBtn.addActionListener(e -> { wodCurrentMonth = wodCurrentMonth.minusMonths(1); refreshWodCalendar(); });
+        JButton todayBtn = new JButton("Hoy");
+        todayBtn.addActionListener(e -> { wodCurrentMonth = java.time.LocalDate.now().withDayOfMonth(1); wodSelectedDay = java.time.LocalDate.now(); refreshWodCalendar(); });
+        JButton nextBtn = new JButton(">");
+        nextBtn.addActionListener(e -> { wodCurrentMonth = wodCurrentMonth.plusMonths(1); refreshWodCalendar(); });
+        JLabel monthLabel = new JLabel();
+        monthLabel.setForeground(Color.WHITE);
+        monthLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        JButton newWodBtn = actionBtn("+ Nuevo WOD");
+        newWodBtn.addActionListener(e -> showAddWodDialog());
 
-        loadBtn.addActionListener(e -> loadWods(model, LocalDate.now().getYear(), monthBox.getSelectedIndex() + 1));
-        addBtn.addActionListener(e -> showAddWodDialog(model));
-        JButton delWodBtn = actionBtn("Eliminar WOD");
-        delWodBtn.setBackground(new Color(180, 40, 40));
-        delWodBtn.addActionListener(e -> {
-            int row = table.getSelectedRow();
-            if (row >= 0 && JOptionPane.showConfirmDialog(this, "Eliminar este WOD?", "Confirmar", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
-                int id = (int) model.getValueAt(row, 0);
-                ApiResponse resp = WodApiService.getInstance().delete(id);
-                if (resp != null && !resp.isOk()) {
-                    JOptionPane.showMessageDialog(this, "Error al eliminar WOD: " + (resp.message != null ? resp.message : ""), "Error", JOptionPane.ERROR_MESSAGE);
-                }
-                loadWods(model, LocalDate.now().getYear(), monthBox.getSelectedIndex() + 1);
-            }
-        });
-        topPanel.add(new JLabel("Mes:"));
-        topPanel.add(monthBox);
-        topPanel.add(loadBtn);
-        topPanel.add(addBtn);
-        topPanel.add(delWodBtn);
+        navPanel.add(prevBtn); navPanel.add(monthLabel); navPanel.add(nextBtn); navPanel.add(todayBtn); navPanel.add(newWodBtn);
 
-        panel.add(topPanel, BorderLayout.NORTH);
-        panel.add(new JScrollPane(table), BorderLayout.CENTER);
-        loadWods(model, LocalDate.now().getYear(), LocalDate.now().getMonthValue());
+        wodCalendarPanel = new JPanel() { protected void paintComponent(Graphics g) { g.setColor(BG); g.fillRect(0,0,getWidth(),getHeight()); } };
+        wodCalendarPanel.setBackground(BG);
+        wodCalendarPanel.setLayout(new BorderLayout());
+
+        wodDetailPanel = new JPanel(new BorderLayout());
+        wodDetailPanel.setBackground(BG);
+
+        JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, wodCalendarPanel, wodDetailPanel);
+        splitPane.setDividerLocation(350);
+        splitPane.setBackground(BG);
+
+        mainPanel.add(navPanel, BorderLayout.NORTH);
+        mainPanel.add(splitPane, BorderLayout.CENTER);
+
+        panel.add(mainPanel, BorderLayout.CENTER);
+        refreshWodCalendar();
         return panel;
     }
 
-    private void loadWods(DefaultTableModel model, int year, int month) {
-        model.setRowCount(0);
-        try {
-            ApiResponse resp = WodApiService.getInstance().getByMonth(year, month);
-            if (resp.isOk() && resp.data != null && resp.data.isJsonArray()) {
-                JsonArray arr = resp.data.getAsJsonArray();
-                for (JsonElement e : arr) {
-                    JsonObject w = e.getAsJsonObject();
-                    model.addRow(new Object[]{
-                        w.has("id_wod") ? w.get("id_wod").getAsInt() : 0,
-                        w.has("titulo") ? w.get("titulo").getAsString() : "",
-                        w.has("fecha") ? w.get("fecha").getAsString() : "",
-                        w.has("tipo") ? w.get("tipo").getAsString() : "",
-                        w.has("nivel") ? w.get("nivel").getAsString() : ""
-                    });
-                }
+    private void refreshWodCalendar() {
+        wodCalendarPanel.removeAll();
+        wodDetailPanel.removeAll();
+
+        java.time.YearMonth ym = java.time.YearMonth.from(wodCurrentMonth);
+        String[] meses = {"Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"};
+        JLabel ml = null;
+        for (java.awt.Component c : ((java.awt.Container)((java.awt.Container)wodCalendarPanel.getParent().getParent().getComponent(0)).getComponent(0)).getComponents()) {
+            if (c instanceof JLabel) { ml = (JLabel)c; break; }
+        }
+        if (ml == null) {
+            java.awt.Container nav = (java.awt.Container)((java.awt.Container)wodCalendarPanel.getParent().getParent().getComponent(0));
+            for (java.awt.Component c : nav.getComponents()) {
+                if (c instanceof JLabel) { ml = (JLabel)c; break; }
             }
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Error al cargar WODs: " + ex.getMessage());
+        }
+        if (ml != null) ml.setText(meses[ym.getMonthValue()-1] + " " + ym.getYear());
+
+        java.time.LocalDate firstDay = ym.atDay(1);
+        int startDow = firstDay.getDayOfWeek().getValue() % 7;
+        int daysInMonth = ym.lengthOfMonth();
+
+        try {
+            ApiResponse resp = WodApiService.getInstance().getByMonth(ym.getYear(), ym.getMonthValue());
+            JsonArray arr = (resp != null && resp.isOk() && resp.data != null && resp.data.isJsonArray()) ? resp.data.getAsJsonArray() : new JsonArray();
+            java.util.Map<String, JsonObject> wodByDate = new java.util.LinkedHashMap<>();
+            for (JsonElement e : arr) { JsonObject w = e.getAsJsonObject(); wodByDate.put(w.get("fecha").getAsString(), w); }
+
+            JPanel grid = new JPanel(new GridLayout(0, 7, 2, 2));
+            grid.setBackground(BG);
+            String[] dias = {"Lun","Mar","Mie","Jue","Vie","Sab","Dom"};
+            for (String d : dias) { JLabel l = new JLabel(d, SwingConstants.CENTER); l.setForeground(GRAY); l.setFont(new Font("Arial", Font.BOLD, 11)); grid.add(l); }
+
+            for (int i = 0; i < startDow; i++) grid.add(new JLabel(""));
+            java.time.LocalDate today = java.time.LocalDate.now();
+            for (int d = 1; d <= daysInMonth; d++) {
+                java.time.LocalDate date = ym.atDay(d);
+                String ds = date.toString();
+                JsonObject w = wodByDate.get(ds);
+                final java.time.LocalDate fdate = date;
+                JButton dayBtn = new JButton(d + (w != null ? " ◉" : ""));
+                dayBtn.setBackground(date.equals(wodSelectedDay) ? RED : DARK);
+                dayBtn.setForeground(date.equals(today) ? RED : Color.WHITE);
+                if (date.isBefore(today)) dayBtn.setEnabled(false);
+                if (w != null) dayBtn.setToolTipText(w.get("titulo").getAsString());
+                dayBtn.addActionListener(e -> { wodSelectedDay = fdate; refreshWodCalendar(); });
+                grid.add(dayBtn);
+            }
+            wodCalendarPanel.add(new JScrollPane(grid), BorderLayout.CENTER);
+
+            JsonObject selWod = wodByDate.get(wodSelectedDay.toString());
+            if (selWod != null) {
+                showWodDetail(selWod);
+            } else {
+                wodDetailPanel.add(new JLabel("  Sin WOD programado para este dia", SwingConstants.CENTER) {{ setForeground(GRAY); }}, BorderLayout.CENTER);
+            }
+        } catch (Exception e) {
+            wodCalendarPanel.add(new JLabel("Error al cargar WODs: " + e.getMessage(), SwingConstants.CENTER) {{ setForeground(Color.RED); }}, BorderLayout.CENTER);
+        }
+        wodCalendarPanel.revalidate(); wodCalendarPanel.repaint();
+        wodDetailPanel.revalidate(); wodDetailPanel.repaint();
+    }
+
+    private void showWodDetail(JsonObject w) {
+        wodDetailPanel.removeAll();
+        int idWod = w.has("id_wod") ? w.get("id_wod").getAsInt() : 0;
+        String titulo = w.has("titulo") ? w.get("titulo").getAsString() : "";
+        String tipo = w.has("tipo") ? w.get("tipo").getAsString() : "";
+        String nivel = w.has("nivel") ? w.get("nivel").getAsString() : "";
+        String desc = w.has("descripcion") ? w.get("descripcion").getAsString() : "";
+        String fecha = w.has("fecha") ? w.get("fecha").getAsString() : wodSelectedDay.toString();
+
+        try {
+            ApiResponse detailResp = WodApiService.getInstance().getByDate(fecha);
+            if (detailResp != null && detailResp.isOk() && detailResp.data != null && detailResp.data.isJsonObject()) {
+                JsonObject detail = detailResp.data.getAsJsonObject();
+                if (detail.has("horarios")) w = detail;
+            }
+        } catch (Exception ignored) {}
+
+        JPanel detailPanel = new JPanel(new BorderLayout());
+        detailPanel.setBackground(BG);
+        detailPanel.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
+
+        JPanel infoPanel = new JPanel();
+        infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
+        infoPanel.setBackground(BG);
+
+        JLabel titleLabel = new JLabel(titulo);
+        titleLabel.setForeground(Color.WHITE);
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 18));
+        infoPanel.add(titleLabel);
+        infoPanel.add(Box.createVerticalStrut(5));
+
+        JPanel badges = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        badges.setBackground(BG);
+        if (!tipo.isEmpty()) { JLabel tb = new JLabel(tipo); tb.setOpaque(true); tb.setBackground(new Color(60,60,60)); tb.setForeground(Color.WHITE); tb.setFont(new Font("Arial", Font.PLAIN, 10)); tb.setBorder(BorderFactory.createEmptyBorder(2,8,2,8)); badges.add(tb); }
+        if (!nivel.isEmpty()) { JLabel nb = new JLabel(nivel); nb.setOpaque(true); nb.setBackground(new Color(180,40,40)); nb.setForeground(Color.WHITE); nb.setFont(new Font("Arial", Font.BOLD, 10)); nb.setBorder(BorderFactory.createEmptyBorder(2,8,2,8)); badges.add(nb); }
+        infoPanel.add(badges);
+        infoPanel.add(Box.createVerticalStrut(8));
+
+        JTextArea descArea = new JTextArea(desc);
+        descArea.setEditable(false); descArea.setLineWrap(true); descArea.setBackground(BG); descArea.setForeground(GRAY);
+        descArea.setFont(new Font("Arial", Font.PLAIN, 11));
+        infoPanel.add(descArea);
+        infoPanel.add(Box.createVerticalStrut(10));
+
+        String[] sCols = {"Hora", "Inscritos", "Entrenador"};
+        wodScheduleModel = new DefaultTableModel(sCols, 0) { public boolean isCellEditable(int r, int c) { return false; } };
+        JsonArray horarios = null;
+        if (w.has("horarios") && w.get("horarios").isJsonArray()) horarios = w.get("horarios").getAsJsonArray();
+        else if (w.has("schedules") && w.get("schedules").isJsonArray()) horarios = w.get("schedules").getAsJsonArray();
+        if (horarios != null) {
+            for (JsonElement he : horarios) {
+                JsonObject h = he.getAsJsonObject();
+                String hora = h.has("hora") ? h.get("hora").getAsString().substring(0, 5) : "--:--";
+                int inscritos = h.has("inscritos") ? h.get("inscritos").getAsInt() : 0;
+                int cupo = h.has("cupo_maximo") ? h.get("cupo_maximo").getAsInt() : 20;
+                String entrenador = h.has("entrenador_nombre") ? h.get("entrenador_nombre").getAsString() : "-";
+                wodScheduleModel.addRow(new Object[]{hora, inscritos + "/" + cupo, entrenador});
+            }
+        }
+        JTable sTable = styledTable(wodScheduleModel);
+        setColumnWidths(sTable, new int[]{80, 120, 200});
+        JScrollPane sScroll = new JScrollPane(sTable);
+        sScroll.setPreferredSize(new Dimension(400, 120));
+        infoPanel.add(new JLabel("Horarios:"));
+        infoPanel.add(sScroll);
+
+        detailPanel.add(infoPanel, BorderLayout.CENTER);
+
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        btnPanel.setBackground(BG);
+        JButton editBtn = actionBtn("Editar WOD");
+        editBtn.addActionListener(e -> showEditWodDialog(idWod, titulo, desc, tipo, nivel, fecha));
+        JButton delBtn = actionBtn("Eliminar WOD");
+        delBtn.setBackground(new Color(180, 40, 40));
+        delBtn.addActionListener(e -> {
+            if (JOptionPane.showConfirmDialog(this, "Eliminar WOD '" + titulo + "'?", "Confirmar", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+                ApiResponse resp = WodApiService.getInstance().delete(idWod);
+                if (resp != null && !resp.isOk()) JOptionPane.showMessageDialog(this, "Error: " + (resp.message != null ? resp.message : ""), "Error", JOptionPane.ERROR_MESSAGE);
+                refreshWodCalendar();
+            }
+        });
+        btnPanel.add(editBtn); btnPanel.add(delBtn);
+        detailPanel.add(btnPanel, BorderLayout.SOUTH);
+
+        wodDetailPanel.add(detailPanel, BorderLayout.CENTER);
+    }
+
+    private void showEditWodDialog(int idWod, String titulo, String desc, String tipo, String nivel, String fecha) {
+        JTextField titField = new JTextField(titulo);
+        JTextField descField = new JTextField(desc);
+        JComboBox<String> typeBox = new JComboBox<>(new String[]{"AMRAP","FOR TIME","EMOM","TABATA","STRENGTH","CHIPPER","HERO","BENCHMARK"});
+        typeBox.setSelectedItem(tipo);
+        JComboBox<String> levelBox = new JComboBox<>(new String[]{"PRINCIPIANTE","INTERMEDIO","AVANZADO","RX","SCALED"});
+        levelBox.setSelectedItem(nivel);
+        Object[] fields = {"Titulo:", titField, "Descripcion:", descField, "Tipo:", typeBox, "Nivel:", levelBox};
+        if (JOptionPane.showConfirmDialog(this, createFormPanel(fields), "Editar WOD", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+            JsonObject body = new JsonObject();
+            body.addProperty("titulo", titField.getText().trim());
+            body.addProperty("descripcion", descField.getText().trim());
+            body.addProperty("tipo", typeBox.getSelectedItem().toString());
+            body.addProperty("nivel", levelBox.getSelectedItem().toString());
+            ApiResponse resp = WodApiService.getInstance().update(idWod, body);
+            if (resp != null && !resp.isOk()) JOptionPane.showMessageDialog(this, "Error: " + (resp.message != null ? resp.message : ""), "Error", JOptionPane.ERROR_MESSAGE);
+            refreshWodCalendar();
         }
     }
 
-    private void showAddWodDialog(DefaultTableModel model) {
+    private void showAddWodDialog() {
         JTextField titleField = new JTextField();
-        JTextField dateField = new JTextField(LocalDate.now().toString());
+        JTextField dateField = new JTextField(wodSelectedDay.toString());
         JTextField descField = new JTextField();
         JComboBox<String> typeBox = new JComboBox<>(new String[]{"AMRAP","FOR TIME","EMOM","TABATA","STRENGTH","CHIPPER","HERO","BENCHMARK"});
-        JComboBox<String> levelBox = new JComboBox<>(new String[]{"Principiante","Intermedio","Avanzado","RX","Scaled"});
-        Object[] fields = {"Titulo:", titleField, "Fecha:", dateField, "Descripcion:", descField, "Tipo:", typeBox, "Nivel:", levelBox};
-        JPanel form = createFormPanel(fields);
+        JComboBox<String> levelBox = new JComboBox<>(new String[]{"PRINCIPIANTE","INTERMEDIO","AVANZADO","RX","SCALED"});
 
-        if (JOptionPane.showConfirmDialog(this, form, "Nuevo WOD", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+        List<Entrenador> trainers = adminController.obtenerTodosEntrenadores();
+        java.util.List<JTextField> horariosHora = new java.util.ArrayList<>();
+        java.util.List<JTextField> horariosCupo = new java.util.ArrayList<>();
+        java.util.List<JComboBox<String>> horariosEnt = new java.util.ArrayList<>();
+        String[] trainerNames = trainers.stream().map(t -> t.getIdEntrenador() + " - " + t.getNombre() + " " + t.getApellido()).toArray(String[]::new);
+
+        addHorarioRow(horariosHora, horariosCupo, horariosEnt, trainerNames);
+
+        JPanel form = new JPanel();
+        form.setLayout(new BoxLayout(form, BoxLayout.Y_AXIS));
+        form.add(new JLabel("Titulo:")); form.add(titleField);
+        form.add(new JLabel("Fecha:")); form.add(dateField);
+        form.add(new JLabel("Descripcion:")); form.add(descField);
+        form.add(new JLabel("Tipo:")); form.add(typeBox);
+        form.add(new JLabel("Nivel:")); form.add(levelBox);
+        form.add(new JLabel("Horarios:"));
+        JPanel hrPanel = createHorariosPanel(horariosHora, horariosCupo, horariosEnt);
+        form.add(hrPanel);
+        JButton addHr = new JButton("+ Agregar Horario");
+        addHr.addActionListener(e -> { addHorarioRow(horariosHora, horariosCupo, horariosEnt, trainerNames); form.remove(form.getComponentCount()-1); form.remove(form.getComponentCount()-1); JPanel hp = createHorariosPanel(horariosHora, horariosCupo, horariosEnt); form.add(hp); form.add(addHr); form.revalidate(); form.repaint(); });
+        form.add(addHr);
+
+        JScrollPane scrollForm = new JScrollPane(form);
+        scrollForm.setPreferredSize(new Dimension(450, 400));
+
+        if (JOptionPane.showConfirmDialog(this, scrollForm, "Nuevo WOD", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
             try {
                 JsonObject body = new JsonObject();
                 body.addProperty("titulo", titleField.getText().trim());
@@ -528,28 +796,66 @@ public class AdminDashboard extends JFrame {
                 body.addProperty("descripcion", descField.getText().trim());
                 body.addProperty("tipo", typeBox.getSelectedItem().toString());
                 body.addProperty("nivel", levelBox.getSelectedItem().toString());
-                JsonArray horarios = new JsonArray();
-                JsonObject h = new JsonObject();
-                h.addProperty("hora", "07:00:00");
-                h.addProperty("cupo_maximo", 20);
-                horarios.add(h);
-                body.add("horarios", horarios);
+                JsonArray horariosArr = new JsonArray();
+                for (int i = 0; i < horariosHora.size(); i++) {
+                    String hora = horariosHora.get(i).getText().trim();
+                    if (hora.isEmpty()) continue;
+                    JsonObject h = new JsonObject();
+                    h.addProperty("hora", hora + ":00");
+                    try { h.addProperty("cupo_maximo", Integer.parseInt(horariosCupo.get(i).getText().trim())); } catch (Exception ex) { h.addProperty("cupo_maximo", 20); }
+                    String sel = horariosEnt.get(i).getSelectedItem().toString();
+                    h.addProperty("id_entrenador", Integer.parseInt(sel.split(" - ")[0]));
+                    horariosArr.add(h);
+                }
+                body.add("horarios", horariosArr);
                 ApiResponse resp = WodApiService.getInstance().create(body);
                 if (resp != null && resp.isOk()) {
                     JOptionPane.showMessageDialog(this, "WOD creado exitosamente!");
-                    loadWods(model, LocalDate.now().getYear(), LocalDate.now().getMonthValue());
+                    wodSelectedDay = java.time.LocalDate.parse(dateField.getText().trim());
                 } else if (resp != null && resp.isQueued()) {
                     JOptionPane.showMessageDialog(this, "Sin conexion. El WOD se guardara al reconectar.", "Aviso", JOptionPane.WARNING_MESSAGE);
                 } else {
-                    JOptionPane.showMessageDialog(this, "Error al crear WOD: " + (resp != null ? resp.message : "Sin respuesta"), "Error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(this, "Error: " + (resp != null ? resp.message : "Sin respuesta"), "Error", JOptionPane.ERROR_MESSAGE);
                 }
+                refreshWodCalendar();
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
             }
         }
     }
 
+    private void addHorarioRow(java.util.List<JTextField> horas, java.util.List<JTextField> cupos, java.util.List<JComboBox<String>> entradores, String[] trainerNames) {
+        horas.add(new JTextField("07:00"));
+        cupos.add(new JTextField("20"));
+        JComboBox<String> cb = new JComboBox<>(trainerNames);
+        entradores.add(cb);
+    }
+
+    private JPanel createHorariosPanel(java.util.List<JTextField> horas, java.util.List<JTextField> cupos, java.util.List<JComboBox<String>> entradores) {
+        JPanel p = new JPanel();
+        p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
+        for (int i = 0; i < horas.size(); i++) {
+            JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT));
+            row.add(new JLabel("Hora:"));
+            JTextField hf = horas.get(i); hf.setPreferredSize(new Dimension(60, 25));
+            row.add(hf);
+            row.add(new JLabel("Cupo:"));
+            JTextField cf = cupos.get(i); cf.setPreferredSize(new Dimension(40, 25));
+            row.add(cf);
+            row.add(entradores.get(i));
+            final int idx = i;
+            JButton rmBtn = new JButton("X");
+            rmBtn.setForeground(Color.RED);
+            rmBtn.addActionListener(e -> { horas.remove(idx); cupos.remove(idx); entradores.remove(idx); p.removeAll(); p.add(createHorariosPanel(horas, cupos, entradores)); p.revalidate(); p.repaint(); });
+            row.add(rmBtn);
+            p.add(row);
+        }
+        return p;
+    }
+
     // ============ TAB: MEMBRESIAS ============
+    private javax.swing.JTextField membershipSearchField;
+    
     private JPanel createMembershipsTab() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(BG);
@@ -560,7 +866,27 @@ public class AdminDashboard extends JFrame {
         };
         membershipModel = model;
         JTable table = styledTable(model);
+        setColumnWidths(table, new int[]{40, 120, 80, 80, 200, 200, 60});
         loadMemberships(model);
+
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setBackground(BG);
+        membershipSearchField = new JTextField();
+        membershipSearchField.setBackground(CARD_BG);
+        membershipSearchField.setForeground(Color.WHITE);
+        membershipSearchField.setCaretColor(Color.WHITE);
+        membershipSearchField.addActionListener(e -> loadMemberships(model));
+        membershipSearchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            void update() { loadMemberships(model); }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { update(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { update(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { update(); }
+        });
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        searchPanel.setBackground(BG);
+        membershipSearchField.setPreferredSize(new java.awt.Dimension(300, 28));
+        searchPanel.add(membershipSearchField);
+        topPanel.add(searchPanel, BorderLayout.WEST);
 
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         btnPanel.setBackground(BG);
@@ -586,14 +912,25 @@ public class AdminDashboard extends JFrame {
         });
         btnPanel.add(addBtn); btnPanel.add(editBtn); btnPanel.add(delBtn);
 
-        panel.add(new JScrollPane(table), BorderLayout.CENTER);
+        panel.add(topPanel, BorderLayout.NORTH);
+        panel.add(wrapTable(table), BorderLayout.CENTER);
         panel.add(btnPanel, BorderLayout.SOUTH);
         return panel;
     }
 
     private void loadMemberships(DefaultTableModel model) {
         model.setRowCount(0);
+        String search = membershipSearchField != null ? membershipSearchField.getText().trim().toLowerCase() : "";
         for (Membresia m : adminController.obtenerMembresias()) {
+            if (!search.isEmpty()) {
+                String nombre = (m.getNombre() != null ? m.getNombre() : "").toLowerCase();
+                String desc = (m.getDescripcion() != null ? m.getDescripcion() : "").toLowerCase();
+                String precio = String.valueOf(m.getPrecio());
+                String duracion = String.valueOf(m.getDuracionDias());
+                if (!nombre.contains(search) && !precio.contains(search) && !duracion.contains(search) && !desc.contains(search)) {
+                    continue;
+                }
+            }
             model.addRow(new Object[]{m.getIdMembresia(), m.getNombre(), "$" + m.getPrecio(), m.getDuracionDias() + "d",
                 m.getDescripcion() != null ? (m.getDescripcion().length() > 30 ? m.getDescripcion().substring(0, 30) + "..." : m.getDescripcion()) : "",
                 m.getBeneficios() != null ? (m.getBeneficios().length() > 40 ? m.getBeneficios().substring(0, 40) + "..." : m.getBeneficios()) : "",
@@ -610,7 +947,10 @@ public class AdminDashboard extends JFrame {
         JTextField daysField = new JTextField(String.valueOf(m.getDuracionDias()));
         JTextField descField = new JTextField(m.getDescripcion() != null ? m.getDescripcion() : "");
         JTextField benefitsField = new JTextField(m.getBeneficios() != null ? m.getBeneficios() : "");
-        Object[] fields = {"Nombre:", nameField, "Precio:", priceField, "Duracion (dias):", daysField, "Descripcion:", descField, "Beneficios:", benefitsField};
+        JCheckBox activeCheck = new JCheckBox("Activa", m.isActiva());
+        activeCheck.setBackground(BG);
+        activeCheck.setForeground(Color.WHITE);
+        Object[] fields = {"Nombre:", nameField, "Precio:", priceField, "Duracion (dias):", daysField, "Descripcion:", descField, "Beneficios:", benefitsField, "", activeCheck};
         JPanel form = createFormPanel(fields);
         if (JOptionPane.showConfirmDialog(this, form, "Editar Membresia", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
             JsonObject body = new JsonObject();
@@ -619,7 +959,7 @@ public class AdminDashboard extends JFrame {
             body.addProperty("duracion_dias", Integer.parseInt(daysField.getText().trim()));
             body.addProperty("descripcion", descField.getText().trim());
             body.addProperty("beneficios", benefitsField.getText().trim());
-            body.addProperty("estado", m.isActiva());
+            body.addProperty("estado", activeCheck.isSelected());
             ApiResponse resp = MembershipApiService.getInstance().update(m.getIdMembresia(), body);
             if (resp == null || (!resp.isOk() && !resp.isQueued())) {
                 JOptionPane.showMessageDialog(this, "Error al actualizar: " + (resp != null ? resp.message : "Sin respuesta"), "Error", JOptionPane.ERROR_MESSAGE);
@@ -647,121 +987,275 @@ public class AdminDashboard extends JFrame {
     }
 
     // ============ TAB: EJERCICIOS ============
+    private javax.swing.JTextField exerciseSearchField;
+    
     private JPanel createExercisesTab() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(BG);
 
-        String[] cols = {"ID", "Nombre", "Descripcion"};
-        DefaultTableModel model = new DefaultTableModel(cols, 0) {
-            public boolean isCellEditable(int r, int c) { return false; }
-        };
+        String[] cols = {"ID", "Nombre", "Descripcion", "Estado"};
+        DefaultTableModel model = new DefaultTableModel(cols, 0) { public boolean isCellEditable(int r, int c) { return false; } };
         exerciseModel = model;
         JTable table = styledTable(model);
+        setColumnWidths(table, new int[]{40, 150, 350, 80});
+        loadExercises(model);
 
-        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setBackground(BG);
-        JTextField searchField = new JTextField(15);
-        JButton searchBtn = actionBtn("Buscar");
-        searchBtn.addActionListener(e -> {
-            try {
-                ApiResponse resp = ExerciseApiService.getInstance().search(searchField.getText().trim());
-                model.setRowCount(0);
-                if (resp.isOk() && resp.data != null && resp.data.isJsonArray()) {
-                    JsonArray arr = resp.data.getAsJsonArray();
-                    for (JsonElement el : arr) {
-                        JsonObject ex = el.getAsJsonObject();
-                        model.addRow(new Object[]{ex.has("id_ejercicio") ? ex.get("id_ejercicio").getAsInt() : 0,
-                            ex.has("nombre") ? ex.get("nombre").getAsString() : "",
-                            ex.has("descripcion") ? ex.get("descripcion").getAsString() : ""});
-                    }
-                }
-            } catch (Exception ex2) { JOptionPane.showMessageDialog(this, "Error: " + ex2.getMessage()); }
+        exerciseSearchField = new JTextField();
+        exerciseSearchField.setBackground(CARD_BG); exerciseSearchField.setForeground(Color.WHITE); exerciseSearchField.setCaretColor(Color.WHITE);
+        exerciseSearchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            void update() { loadExercises(model); }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { update(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { update(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { update(); }
         });
-        topPanel.add(new JLabel("Buscar:"));
-        topPanel.add(searchField);
-        topPanel.add(searchBtn);
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        searchPanel.setBackground(BG);
+        exerciseSearchField.setPreferredSize(new Dimension(300, 28));
+        searchPanel.add(exerciseSearchField);
+        topPanel.add(searchPanel, BorderLayout.WEST);
+
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        btnPanel.setBackground(BG);
+        JButton addBtn = actionBtn("+ Nuevo Ejercicio");
+        addBtn.addActionListener(e -> showAddExerciseDialog(model));
+        JButton editBtn = actionBtn("Editar");
+        editBtn.addActionListener(e -> { int row = table.getSelectedRow(); if (row >= 0) showEditExerciseDialog(row, model); });
+        JButton deactBtn = actionBtn("Desactivar");
+        deactBtn.setBackground(new Color(200, 120, 0));
+        deactBtn.addActionListener(e -> {
+            int row = table.getSelectedRow();
+            if (row >= 0 && JOptionPane.showConfirmDialog(this, "Desactivar este ejercicio?", "Confirmar", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+                int id = (int) model.getValueAt(row, 0);
+                ExerciseApiService.getInstance().delete(id);
+                loadExercises(model);
+            }
+        });
+        JButton reactBtn = actionBtn("Reactivar");
+        reactBtn.setBackground(new Color(40, 160, 40));
+        reactBtn.addActionListener(e -> {
+            int row = table.getSelectedRow();
+            if (row >= 0 && JOptionPane.showConfirmDialog(this, "Reactivar este ejercicio?", "Confirmar", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+                int id = (int) model.getValueAt(row, 0);
+                ExerciseApiService.getInstance().reactivate(id);
+                loadExercises(model);
+            }
+        });
+        btnPanel.add(addBtn); btnPanel.add(editBtn); btnPanel.add(deactBtn); btnPanel.add(reactBtn);
 
         panel.add(topPanel, BorderLayout.NORTH);
-        panel.add(new JScrollPane(table), BorderLayout.CENTER);
-        loadExercises(model);
+        panel.add(wrapTable(table), BorderLayout.CENTER);
+        panel.add(btnPanel, BorderLayout.SOUTH);
         return panel;
     }
 
     private void loadExercises(DefaultTableModel model) {
         model.setRowCount(0);
+        String search = exerciseSearchField != null ? exerciseSearchField.getText().trim().toLowerCase() : "";
         try {
             ApiResponse resp = ExerciseApiService.getInstance().getAll();
             if (resp.isOk() && resp.data != null && resp.data.isJsonArray()) {
-                JsonArray arr = resp.data.getAsJsonArray();
-                for (JsonElement e : arr) {
-                    JsonObject ex = e.getAsJsonObject();
+                for (JsonElement el : resp.data.getAsJsonArray()) {
+                    JsonObject ex = el.getAsJsonObject();
+                    String nombre = ex.has("nombre") ? ex.get("nombre").getAsString() : "";
+                    String desc = ex.has("descripcion") && !ex.get("descripcion").isJsonNull() ? ex.get("descripcion").getAsString() : "";
+                    boolean activo = !ex.has("activo") || ex.get("activo").isJsonNull() || ex.get("activo").getAsBoolean();
+                    if (!search.isEmpty()) {
+                        if (!nombre.toLowerCase().contains(search) && !desc.toLowerCase().contains(search)) continue;
+                    }
                     model.addRow(new Object[]{ex.has("id_ejercicio") ? ex.get("id_ejercicio").getAsInt() : 0,
-                        ex.has("nombre") ? ex.get("nombre").getAsString() : "",
-                        ex.has("descripcion") ? ex.get("descripcion").getAsString() : ""});
+                        nombre, desc.length() > 50 ? desc.substring(0,50)+"..." : desc,
+                        activo ? "Activo" : "Inactivo"});
                 }
             }
-        } catch (Exception ex) { /* no carga, tabla vacia */ }
+        } catch (Exception e) { /* ignore */ }
+    }
+
+    private void showAddExerciseDialog(DefaultTableModel model) {
+        JTextField nameField = new JTextField();
+        JTextField descField = new JTextField();
+        Object[] fields = {"Nombre:", nameField, "Descripcion:", descField};
+        if (JOptionPane.showConfirmDialog(this, createFormPanel(fields), "Nuevo Ejercicio", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+            JsonObject body = new JsonObject();
+            body.addProperty("nombre", nameField.getText().trim());
+            body.addProperty("descripcion", descField.getText().trim());
+            ExerciseApiService.getInstance().create(body);
+            loadExercises(model);
+        }
+    }
+
+    private void showEditExerciseDialog(int row, DefaultTableModel model) {
+        try {
+            int id = (int) model.getValueAt(row, 0);
+            ApiResponse resp = ExerciseApiService.getInstance().getById(id);
+            if (!resp.isOk() || resp.data == null || !resp.data.isJsonObject()) return;
+            JsonObject ex = resp.data.getAsJsonObject();
+            JTextField nameField = new JTextField(ex.has("nombre") ? ex.get("nombre").getAsString() : "");
+            JTextField descField = new JTextField(ex.has("descripcion") && !ex.get("descripcion").isJsonNull() ? ex.get("descripcion").getAsString() : "");
+            Object[] fields = {"Nombre:", nameField, "Descripcion:", descField};
+            if (JOptionPane.showConfirmDialog(this, createFormPanel(fields), "Editar Ejercicio", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+                JsonObject body = new JsonObject();
+                body.addProperty("nombre", nameField.getText().trim());
+                body.addProperty("descripcion", descField.getText().trim());
+                ExerciseApiService.getInstance().update(id, body);
+                loadExercises(model);
+            }
+        } catch (Exception e) { JOptionPane.showMessageDialog(this, "Error: " + e.getMessage()); }
     }
 
     // ============ TAB: CLASES ============
+    private javax.swing.JTextField classSearchField;
+    
     private JPanel createClassesTab() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(BG);
 
-        String[] cols = {"ID", "Nombre", "Fecha", "Hora", "Estado"};
-        DefaultTableModel model = new DefaultTableModel(cols, 0) {
-            public boolean isCellEditable(int r, int c) { return false; }
-        };
+        String[] cols = {"ID", "Nombre", "Descripcion", "Fecha", "Hora", "Entrenador", "Cupo", "Inscritos", "Estado"};
+        DefaultTableModel model = new DefaultTableModel(cols, 0) { public boolean isCellEditable(int r, int c) { return false; } };
         classModel = model;
         JTable table = styledTable(model);
+        setColumnWidths(table, new int[]{40, 120, 200, 80, 60, 140, 50, 60, 60});
         loadClasses(model);
+
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setBackground(BG);
+        classSearchField = new JTextField();
+        classSearchField.setBackground(CARD_BG); classSearchField.setForeground(Color.WHITE); classSearchField.setCaretColor(Color.WHITE);
+        classSearchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            void update() { loadClasses(model); }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { update(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { update(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { update(); }
+        });
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        searchPanel.setBackground(BG);
+        classSearchField.setPreferredSize(new Dimension(300, 28));
+        searchPanel.add(classSearchField);
+        topPanel.add(searchPanel, BorderLayout.WEST);
 
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         btnPanel.setBackground(BG);
         JButton addBtn = actionBtn("+ Nueva Clase");
         addBtn.addActionListener(e -> showAddClassDialog(model));
-        JButton delBtn = actionBtn("Cancelar");
-        delBtn.setBackground(new Color(180, 40, 40));
-        delBtn.addActionListener(e -> {
+        JButton editBtn = actionBtn("Editar");
+        editBtn.addActionListener(e -> { int row = table.getSelectedRow(); if (row >= 0) showEditClassDialog(row, model); });
+        JButton cancelBtn = actionBtn("Cancelar");
+        cancelBtn.setBackground(new Color(200, 120, 0));
+        cancelBtn.addActionListener(e -> {
             int row = table.getSelectedRow();
-            if (row >= 0 && JOptionPane.showConfirmDialog(this, "Cancelar esta clase?", "Confirmar", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+            if (row >= 0 && JOptionPane.showConfirmDialog(this, "Cancelar esta clase? Pasara a estado CANCELADA.", "Confirmar", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
                 int id = (int) model.getValueAt(row, 0);
-                if (adminController.eliminarClase(id)) {
-                    loadClasses(model);
-                }
+                if (adminController.eliminarClase(id)) loadClasses(model);
             }
         });
-        btnPanel.add(addBtn); btnPanel.add(delBtn);
+        JButton reactBtn = actionBtn("Reactivar");
+        reactBtn.setBackground(new Color(40, 160, 40));
+        reactBtn.addActionListener(e -> {
+            int row = table.getSelectedRow();
+            if (row >= 0 && JOptionPane.showConfirmDialog(this, "Reactivar esta clase?", "Confirmar", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+                int id = (int) model.getValueAt(row, 0);
+                JsonObject reactBody = new JsonObject();
+                reactBody.addProperty("estado", "ACTIVA");
+                ApiResponse resp = ClassApiService.getInstance().update(id, reactBody);
+                if (resp != null && resp.isOk()) loadClasses(model);
+                else JOptionPane.showMessageDialog(this, "Error al reactivar: " + (resp != null ? resp.message : ""), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        JButton permDelBtn = actionBtn("Eliminar Permanente");
+        permDelBtn.setBackground(new Color(180, 40, 40));
+        permDelBtn.addActionListener(e -> {
+            int row = table.getSelectedRow();
+            if (row >= 0 && JOptionPane.showConfirmDialog(this, "Eliminar esta clase PERMANENTEMENTE?", "Confirmar", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+                int id = (int) model.getValueAt(row, 0);
+                ApiResponse resp = ClassApiService.getInstance().deletePermanently(id);
+                if (resp != null && resp.isOk()) loadClasses(model);
+                else JOptionPane.showMessageDialog(this, "Error: " + (resp != null ? resp.message : ""), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        btnPanel.add(addBtn); btnPanel.add(editBtn); btnPanel.add(cancelBtn); btnPanel.add(reactBtn); btnPanel.add(permDelBtn);
 
-        panel.add(new JScrollPane(table), BorderLayout.CENTER);
+        panel.add(topPanel, BorderLayout.NORTH);
+        panel.add(wrapTable(table), BorderLayout.CENTER);
         panel.add(btnPanel, BorderLayout.SOUTH);
         return panel;
     }
 
     private void loadClasses(DefaultTableModel model) {
         model.setRowCount(0);
+        String search = classSearchField != null ? classSearchField.getText().trim().toLowerCase() : "";
         for (Clase c : adminController.obtenerClases()) {
+            if (!search.isEmpty()) {
+                String nombre = (c.getNombre() != null ? c.getNombre() : "").toLowerCase();
+                String trainer = (c.getNombreEntrenador() != null ? c.getNombreEntrenador() : "").toLowerCase();
+                if (!nombre.contains(search) && !trainer.contains(search)) continue;
+            }
             model.addRow(new Object[]{c.getIdClase(), c.getNombre(),
+                c.getDescripcion() != null ? (c.getDescripcion().length() > 30 ? c.getDescripcion().substring(0,30)+"..." : c.getDescripcion()) : "",
                 c.getDiaSemana() != null ? c.getDiaSemana() : "",
                 c.getHorarioInicio() != null ? c.getHorarioInicio().toString() : "",
+                c.getNombreEntrenador() != null ? c.getNombreEntrenador() : (c.getIdEntrenador() > 0 ? "ID: "+c.getIdEntrenador() : "-"),
+                c.getCapacidadMaxima(), getInscritosForClass(c.getIdClase()),
                 c.isActiva() ? "ACTIVA" : "CANCELADA"});
         }
     }
 
+    private int getInscritosForClass(int idClase) {
+        try {
+            ApiResponse resp = ClassApiService.getInstance().getEnrolledStudents(idClase);
+            if (resp != null && resp.isOk() && resp.data != null && resp.data.isJsonArray()) return resp.data.getAsJsonArray().size();
+        } catch (Exception ignored) {}
+        return 0;
+    }
+
     private void showAddClassDialog(DefaultTableModel model) {
         JTextField nameField = new JTextField();
+        JTextField descField = new JTextField();
         JTextField dateField = new JTextField(LocalDate.now().toString());
         JTextField timeField = new JTextField("07:00");
         JTextField capField = new JTextField("20");
-        Object[] fields = {"Nombre:", nameField, "Fecha:", dateField, "Hora:", timeField, "Cupo:", capField};
+        List<Entrenador> trainers = adminController.obtenerTodosEntrenadores();
+        String[] trainerNames = trainers.stream().map(t -> t.getIdEntrenador() + " - " + t.getNombre() + " " + t.getApellido()).toArray(String[]::new);
+        JComboBox<String> entBox = new JComboBox<>(trainerNames);
+        Object[] fields = {"Nombre:", nameField, "Descripcion:", descField, "Fecha:", dateField, "Hora:", timeField, "Cupo:", capField, "Entrenador:", entBox};
         JPanel form = createFormPanel(fields);
 
         if (JOptionPane.showConfirmDialog(this, form, "Nueva Clase", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
-            Clase c = new Clase(nameField.getText().trim(), "Clase IroncladBox", 1,
+            int entId = Integer.parseInt(trainerNames[entBox.getSelectedIndex()].split(" - ")[0]);
+            Clase c = new Clase(nameField.getText().trim(), descField.getText().trim(), entId,
                 LocalTime.parse(timeField.getText().trim()), LocalTime.parse(timeField.getText().trim()).plusHours(1),
                 dateField.getText().trim(), Integer.parseInt(capField.getText().trim()));
             adminController.crearClase(c);
             loadClasses(model);
+        }
+    }
+
+    private void showEditClassDialog(int row, DefaultTableModel model) {
+        List<Clase> list = adminController.obtenerClases();
+        if (row >= list.size()) return;
+        Clase c = list.get(row);
+        JTextField nameField = new JTextField(c.getNombre());
+        JTextField descField = new JTextField(c.getDescripcion() != null ? c.getDescripcion() : "");
+        JTextField dateField = new JTextField(c.getDiaSemana() != null ? c.getDiaSemana() : LocalDate.now().toString());
+        JTextField timeField = new JTextField(c.getHorarioInicio() != null ? c.getHorarioInicio().toString() : "07:00");
+        JTextField capField = new JTextField(String.valueOf(c.getCapacidadMaxima()));
+        List<Entrenador> trainers = adminController.obtenerTodosEntrenadores();
+        String[] trainerNames = trainers.stream().map(t -> t.getIdEntrenador() + " - " + t.getNombre() + " " + t.getApellido()).toArray(String[]::new);
+        JComboBox<String> entBox = new JComboBox<>(trainerNames);
+        for (int i = 0; i < trainers.size(); i++) { if (trainers.get(i).getIdEntrenador() == c.getIdEntrenador()) { entBox.setSelectedIndex(i); break; } }
+        Object[] fields = {"Nombre:", nameField, "Descripcion:", descField, "Fecha:", dateField, "Hora:", timeField, "Cupo:", capField, "Entrenador:", entBox};
+        if (JOptionPane.showConfirmDialog(this, createFormPanel(fields), "Editar Clase", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+            int entId = Integer.parseInt(trainerNames[entBox.getSelectedIndex()].split(" - ")[0]);
+            JsonObject body = new JsonObject();
+            body.addProperty("nombre", nameField.getText().trim());
+            body.addProperty("descripcion", descField.getText().trim());
+            body.addProperty("fecha", dateField.getText().trim());
+            body.addProperty("hora", timeField.getText().trim() + ":00");
+            body.addProperty("cupo_maximo", Integer.parseInt(capField.getText().trim()));
+            body.addProperty("id_entrenador", entId);
+            ApiResponse resp = ClassApiService.getInstance().update(c.getIdClase(), body);
+            if (resp != null && resp.isOk()) loadClasses(model);
+            else JOptionPane.showMessageDialog(this, "Error: " + (resp != null ? resp.message : ""), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -799,15 +1293,18 @@ public class AdminDashboard extends JFrame {
     private void showChangePasswordDialog() {
         JPasswordField currentPwd = new JPasswordField();
         JPasswordField newPwd = new JPasswordField();
+        JPasswordField confirmPwd = new JPasswordField();
         currentPwd.setBackground(CARD_BG); currentPwd.setForeground(Color.WHITE); currentPwd.setCaretColor(RED);
         newPwd.setBackground(CARD_BG); newPwd.setForeground(Color.WHITE); newPwd.setCaretColor(RED);
-        Object[] fields = {"Contrasena actual:", currentPwd, "Nueva contrasena:", newPwd};
+        confirmPwd.setBackground(CARD_BG); confirmPwd.setForeground(Color.WHITE); confirmPwd.setCaretColor(RED);
+        Object[] fields = {"Contrasena actual:", currentPwd, "Nueva contrasena:", newPwd, "Confirmar nueva:", confirmPwd};
         JPanel form = createFormPanel(fields);
         if (JOptionPane.showConfirmDialog(this, form, "Cambiar Contrasena", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+            if (!new String(newPwd.getPassword()).equals(new String(confirmPwd.getPassword()))) {
+                JOptionPane.showMessageDialog(this, "Las contrasenas no coinciden", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
             try {
-                JsonObject body = new JsonObject();
-                body.addProperty("currentPassword", new String(currentPwd.getPassword()));
-                body.addProperty("newPassword", new String(newPwd.getPassword()));
                 ApiResponse resp = AuthApiService.getInstance().changePassword(
                     new String(currentPwd.getPassword()), new String(newPwd.getPassword()));
                 JOptionPane.showMessageDialog(this, resp.isOk() ? "Contrasena actualizada!" : resp.message);
@@ -824,16 +1321,36 @@ public class AdminDashboard extends JFrame {
         table.setForeground(Color.WHITE);
         table.setGridColor(new Color(0x3A, 0x3A, 0x3C));
         table.setSelectionBackground(RED);
-        table.setRowHeight(28);
-        table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-        for (int i = 0; i < table.getColumnCount(); i++) {
-            table.getColumnModel().getColumn(i).setPreferredWidth(100);
-        }
+        table.setSelectionForeground(Color.WHITE);
+        table.setRowHeight(32);
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+        table.setFillsViewportHeight(true);
         table.getTableHeader().setBackground(DARK);
         table.getTableHeader().setForeground(RED);
         table.getTableHeader().setFont(new Font("Arial", Font.BOLD, 11));
+        table.getTableHeader().setReorderingAllowed(false);
         table.setFont(new Font("Arial", Font.PLAIN, 11));
+        table.setDefaultRenderer(Object.class, new javax.swing.table.DefaultTableCellRenderer() {
+            @Override
+            public java.awt.Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                java.awt.Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                if (!isSelected) {
+                    c.setBackground(row % 2 == 0 ? CARD_BG : new Color(0x25, 0x25, 0x28));
+                }
+                if (c instanceof JLabel) {
+                    JLabel l = (JLabel) c;
+                    l.setBorder(BorderFactory.createEmptyBorder(2, 8, 2, 8));
+                }
+                return c;
+            }
+        });
         return table;
+    }
+
+    private void setColumnWidths(JTable table, int[] widths) {
+        for (int i = 0; i < Math.min(widths.length, table.getColumnCount()); i++) {
+            table.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
+        }
     }
 
     private JButton actionBtn(String text) {
@@ -865,7 +1382,18 @@ public class AdminDashboard extends JFrame {
                 tf.setFont(new Font("Arial", Font.PLAIN, 11));
                 panel.add(tf);
             } else if (rows[i + 1] instanceof JComboBox) {
-                panel.add((JComboBox<?>) rows[i + 1]);
+                JComboBox<?> cb = (JComboBox<?>) rows[i + 1];
+                cb.setBackground(CARD_BG);
+                cb.setForeground(Color.WHITE);
+                cb.setFont(new Font("Arial", Font.PLAIN, 11));
+                panel.add(cb);
+            } else if (rows[i + 1] instanceof JCheckBox) {
+                JCheckBox chk = (JCheckBox) rows[i + 1];
+                chk.setBackground(BG);
+                chk.setForeground(Color.WHITE);
+                panel.add(chk);
+            } else {
+                panel.add((java.awt.Component) rows[i + 1]);
             }
         }
         return panel;
@@ -882,5 +1410,11 @@ public class AdminDashboard extends JFrame {
         authController.logout();
         dispose();
         new LoginView();
+    }
+
+    private JScrollPane wrapTable(JTable table) {
+        JScrollPane sp = new JScrollPane(table);
+        sp.setPreferredSize(new Dimension(800, 280));
+        return sp;
     }
 }

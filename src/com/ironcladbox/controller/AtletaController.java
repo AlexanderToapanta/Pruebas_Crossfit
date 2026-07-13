@@ -8,6 +8,7 @@ import com.ironcladbox.service.*;
 import com.ironcladbox.dto.ApiResponse;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,6 +17,7 @@ public class AtletaController {
     private final AthleteApiService athleteService;
     private final MembershipApiService membershipService;
     private final WodApiService wodService;
+    private final ProgressApiService progressService;
     private final SocketService socketService;
     private Runnable onDataChanged;
 
@@ -24,6 +26,7 @@ public class AtletaController {
         this.athleteService = AthleteApiService.getInstance();
         this.membershipService = MembershipApiService.getInstance();
         this.wodService = WodApiService.getInstance();
+        this.progressService = ProgressApiService.getInstance();
         this.socketService = SocketService.getInstance();
 
         socketService.on("class:created", data -> notifyChange());
@@ -36,7 +39,11 @@ public class AtletaController {
         socketService.on("wod:created", data -> notifyChange());
         socketService.on("wod:updated", data -> notifyChange());
         socketService.on("schedule:created", data -> notifyChange());
+        socketService.on("schedule:deleted", data -> notifyChange());
         socketService.on("enrollment:created", data -> notifyChange());
+        socketService.on("enrollment:deleted", data -> notifyChange());
+        socketService.on("exercises:updated", data -> notifyChange());
+        socketService.on("progress:updated", data -> notifyChange());
         socketService.setOnReconnected(() -> notifyChange());
     }
 
@@ -77,6 +84,38 @@ public class AtletaController {
         return filtradas;
     }
 
+    public List<Clase> obtenerMisClases() {
+        List<Clase> result = new ArrayList<>();
+        try {
+            ApiResponse resp = classService.getMyClasses();
+            if (resp.isOk() && resp.data != null && resp.data.isJsonArray()) {
+                JsonArray arr = resp.data.getAsJsonArray();
+                for (JsonElement e : arr) {
+                    if (e.isJsonObject()) result.add(parseClase(e.getAsJsonObject()));
+                }
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return result;
+    }
+
+    public boolean inscribirClase(int idClase) {
+        try {
+            ApiResponse resp = classService.enroll(idClase);
+            if (resp != null && resp.isOk()) { notifyChange(); return true; }
+        } catch (Exception ex) { ex.printStackTrace(); }
+        return false;
+    }
+
+    public boolean cancelarInscripcionClase(int idClase) {
+        try {
+            ApiResponse resp = classService.unenroll(idClase);
+            if (resp != null && resp.isOk()) { notifyChange(); return true; }
+        } catch (Exception ex) { ex.printStackTrace(); }
+        return false;
+    }
+
     public Suscripcion obtenerSuscripcionActiva(int idAtleta) {
         try {
             ApiResponse resp = athleteService.getMyMembership();
@@ -102,19 +141,152 @@ public class AtletaController {
         return null;
     }
 
-    public List<Asistencia> obtenerHistorialAsistencia(int idAtleta) {
-        return new ArrayList<>();
+    public List<JsonObject> obtenerMisHorariosWOD() {
+        List<JsonObject> result = new ArrayList<>();
+        try {
+            ApiResponse resp = wodService.getMySchedules();
+            if (resp.isOk() && resp.data != null && resp.data.isJsonArray()) {
+                JsonArray arr = resp.data.getAsJsonArray();
+                for (JsonElement e : arr) {
+                    if (e.isJsonObject()) result.add(e.getAsJsonObject());
+                }
+            }
+        } catch (Exception ex) { ex.printStackTrace(); }
+        return result;
     }
 
-    public void registrarAsistencia(int idAtleta, int idClase) {
+    public JsonObject obtenerRacha() {
+        try {
+            ApiResponse resp = wodService.getRacha();
+            if (resp.isOk() && resp.data != null && resp.data.isJsonObject()) {
+                return resp.data.getAsJsonObject();
+            }
+        } catch (Exception ex) { ex.printStackTrace(); }
+        JsonObject fallback = new JsonObject();
+        fallback.addProperty("racha_actual", 0);
+        fallback.addProperty("racha_maxima", 0);
+        fallback.addProperty("total_asistencias", 0);
+        fallback.addProperty("asistencias_mes", 0);
+        return fallback;
     }
 
-    public double calcularPorcentajeAsistencia(int idAtleta) {
-        return 0;
+    public List<JsonObject> obtenerHistorialAsistencias() {
+        List<JsonObject> result = new ArrayList<>();
+        try {
+            ApiResponse resp = wodService.getHistorialAsistencias();
+            if (resp.isOk() && resp.data != null && resp.data.isJsonArray()) {
+                JsonArray arr = resp.data.getAsJsonArray();
+                for (JsonElement e : arr) {
+                    if (e.isJsonObject()) result.add(e.getAsJsonObject());
+                }
+            }
+        } catch (Exception ex) { ex.printStackTrace(); }
+        return result;
     }
 
-    public Membresia obtenerMembresiaActiva(int idAtleta) {
-        return null;
+    public boolean marcarAsistencia(int idInscripcion) {
+        try {
+            ApiResponse resp = wodService.marcarAsistencia(idInscripcion);
+            if (resp != null && resp.isOk()) { notifyChange(); return true; }
+        } catch (Exception ex) { ex.printStackTrace(); }
+        return false;
+    }
+
+    public boolean inscribirHorarioWOD(int idHorario) {
+        try {
+            ApiResponse resp = wodService.enrollSchedule(idHorario);
+            if (resp != null && resp.isOk()) { notifyChange(); return true; }
+        } catch (Exception ex) { ex.printStackTrace(); }
+        return false;
+    }
+
+    public boolean cancelarInscripcionWOD(int idHorario) {
+        try {
+            ApiResponse resp = wodService.unenrollSchedule(idHorario);
+            if (resp != null && resp.isOk()) { notifyChange(); return true; }
+        } catch (Exception ex) { ex.printStackTrace(); }
+        return false;
+    }
+
+    public List<JsonObject> obtenerWODsPorMes(int year, int month) {
+        List<JsonObject> result = new ArrayList<>();
+        try {
+            ApiResponse resp = wodService.getByMonth(year, month);
+            if (resp.isOk() && resp.data != null && resp.data.isJsonArray()) {
+                JsonArray arr = resp.data.getAsJsonArray();
+                for (JsonElement e : arr) {
+                    if (e.isJsonObject()) result.add(e.getAsJsonObject());
+                }
+            }
+        } catch (Exception ex) { ex.printStackTrace(); }
+        return result;
+    }
+
+    public List<JsonObject> obtenerHorariosWOD(int idWod) {
+        List<JsonObject> result = new ArrayList<>();
+        try {
+            ApiResponse resp = wodService.getSchedulesByWod(idWod);
+            if (resp.isOk() && resp.data != null && resp.data.isJsonArray()) {
+                JsonArray arr = resp.data.getAsJsonArray();
+                for (JsonElement e : arr) {
+                    if (e.isJsonObject()) result.add(e.getAsJsonObject());
+                }
+            }
+        } catch (Exception ex) { ex.printStackTrace(); }
+        return result;
+    }
+
+    public JsonObject obtenerEstadisticasProgreso() {
+        try {
+            ApiResponse resp = progressService.getEstadisticas();
+            if (resp.isOk() && resp.data != null && resp.data.isJsonObject()) {
+                return resp.data.getAsJsonObject();
+            }
+        } catch (Exception ex) { ex.printStackTrace(); }
+        JsonObject fallback = new JsonObject();
+        fallback.addProperty("total_ejercicios", 0);
+        fallback.addProperty("promedio_marcas", 0);
+        fallback.addProperty("marca_mas_alta", 0);
+        return fallback;
+    }
+
+    public List<JsonObject> obtenerEjerciciosConProgreso() {
+        List<JsonObject> result = new ArrayList<>();
+        try {
+            ApiResponse resp = progressService.getEjerciciosConProgreso();
+            if (resp.isOk() && resp.data != null && resp.data.isJsonArray()) {
+                JsonArray arr = resp.data.getAsJsonArray();
+                for (JsonElement e : arr) {
+                    if (e.isJsonObject()) result.add(e.getAsJsonObject());
+                }
+            }
+        } catch (Exception ex) { ex.printStackTrace(); }
+        return result;
+    }
+
+    public JsonObject actualizarMarca(int idEjercicio, double marca) {
+        try {
+            ApiResponse resp = progressService.actualizarMarca(idEjercicio, marca);
+            if (resp != null && resp.isOk() && resp.data != null && resp.data.isJsonObject()) {
+                notifyChange();
+                return resp.data.getAsJsonObject();
+            }
+        } catch (Exception ex) { ex.printStackTrace(); }
+        return new JsonObject();
+    }
+
+    public List<JsonObject> obtenerEjercicios() {
+        List<JsonObject> result = new ArrayList<>();
+        try {
+            ApiResponse resp = ExerciseApiService.getInstance().getAll();
+            if (resp.isOk() && resp.data != null && resp.data.isJsonArray()) {
+                JsonArray arr = resp.data.getAsJsonArray();
+                for (JsonElement e : arr) {
+                    if (e.isJsonObject()) result.add(e.getAsJsonObject());
+                }
+            }
+        } catch (Exception ex) { ex.printStackTrace(); }
+        return result;
     }
 
     public List<Membresia> obtenerMembresiasCambio() {
@@ -136,9 +308,7 @@ public class AtletaController {
                     }
                 }
             }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
+        } catch (Exception ex) { ex.printStackTrace(); }
         return result;
     }
 
@@ -152,6 +322,27 @@ public class AtletaController {
         return resp != null && resp.isOk() && resp.success;
     }
 
+    public boolean cancelarMembresia() {
+        try {
+            ApiResponse resp = athleteService.cancelMyMembership();
+            if (resp != null && resp.isOk()) { notifyChange(); return true; }
+        } catch (Exception ex) { ex.printStackTrace(); }
+        return false;
+    }
+
+    public String getFotoPerfil() {
+        try {
+            ApiResponse resp = ApiService.getInstance().get(com.ironcladbox.config.ApiConfig.AUTH_PROFILE);
+            if (resp.isOk() && resp.data != null && resp.data.isJsonObject()) {
+                JsonObject json = resp.data.getAsJsonObject();
+                if (json.has("foto_perfil") && !json.get("foto_perfil").isJsonNull()) {
+                    return json.get("foto_perfil").getAsString();
+                }
+            }
+        } catch (Exception ex) { ex.printStackTrace(); }
+        return null;
+    }
+
     private Clase parseClase(JsonObject json) {
         Clase c = new Clase();
         c.setIdClase(json.has("id_clase") ? json.get("id_clase").getAsInt() : 0);
@@ -162,7 +353,11 @@ public class AtletaController {
         if (json.has("hora")) {
             try { c.setHorarioInicio(LocalTime.parse(json.get("hora").getAsString().substring(0, 5))); } catch (Exception ex) {}
         }
+        if (json.has("fecha")) {
+            try { c.setFecha(LocalDate.parse(json.get("fecha").getAsString().substring(0, 10))); } catch (Exception ex) {}
+        }
         if (json.has("cupo_maximo")) c.setCapacidadMaxima(json.get("cupo_maximo").getAsInt());
+        if (json.has("inscritos")) c.setInscritos(json.get("inscritos").getAsInt());
         c.setActiva("ACTIVA".equals(json.has("estado") ? json.get("estado").getAsString() : ""));
         return c;
     }

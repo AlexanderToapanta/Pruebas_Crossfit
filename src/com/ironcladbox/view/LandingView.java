@@ -205,7 +205,6 @@ public class LandingView extends JFrame {
         features.add(featureCard("\uD83C\uDFCB", "Equipo Premium", "Instalaciones de primer nivel"));
         features.add(featureCard("\uD83D\uDC65", "Comunidad", "Ambiente motivador y familiar"));
         features.add(featureCard("\uD83C\uDFC5", "Coaches Certificados", "Entrenadores experimentados"));
-        features.add(featureCard("\uD83D\uDCC8", "Progreso", "Resultados garantizados"));
         panel.add(features);
 
         // Stats
@@ -217,14 +216,16 @@ public class LandingView extends JFrame {
             if (resp.isOk() && resp.data != null && resp.data.isJsonObject()) {
                 JsonObject s = resp.data.getAsJsonObject();
                 stats.add(statCard("Atletas", s.has("totalAthletes") ? s.get("totalAthletes").getAsInt() : 60));
-                stats.add(statCard("Coaches", s.has("totalTrainers") ? s.get("totalTrainers").getAsInt() : 2));
-                stats.add(statCard("Clases", s.has("totalWODs") ? s.get("totalWODs").getAsInt() : 50));
+                stats.add(statCard("Activos", s.has("activeAthletes") ? s.get("activeAthletes").getAsInt() : 0));
+                stats.add(statCard("Entrenadores", s.has("totalTrainers") ? s.get("totalTrainers").getAsInt() : 2));
+                stats.add(statCard("WODs", s.has("totalWODs") ? s.get("totalWODs").getAsInt() : 50));
                 stats.add(statCard("Membresias", s.has("totalMemberships") ? s.get("totalMemberships").getAsInt() : 4));
             }
         } catch (Exception ex) {
             stats.add(statCard("Atletas", 60));
-            stats.add(statCard("Coaches", 2));
-            stats.add(statCard("Clases", 50));
+            stats.add(statCard("Activos", 0));
+            stats.add(statCard("Entrenadores", 2));
+            stats.add(statCard("WODs", 50));
             stats.add(statCard("Membresias", 4));
         }
         panel.add(stats);

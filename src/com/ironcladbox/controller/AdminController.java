@@ -247,6 +247,7 @@ public class AdminController {
         body.addProperty("anios_experiencia", entrenador.getExperienciaAnios());
         body.addProperty("certificaciones", entrenador.getCertificacion() != null ? entrenador.getCertificacion() : "");
         body.addProperty("biografia", entrenador.getBiografia() != null ? entrenador.getBiografia() : "");
+        body.addProperty("telefono", entrenador.getTelefono() != null ? entrenador.getTelefono() : "");
         ApiResponse resp = trainerService.update(entrenador.getIdEntrenador(), body);
         if (resp != null && resp.isQueued()) {
             System.out.println("actualizarEntrenador: encolado sin conexion");
@@ -374,10 +375,11 @@ public class AdminController {
         e.setEmail(json.has("email") && !json.get("email").isJsonNull() ? json.get("email").getAsString() : "");
         e.setTelefono(json.has("telefono") && !json.get("telefono").isJsonNull() ? json.get("telefono").getAsString() : "");
         e.setRol(Rol.ENTRENADOR);
-        e.setActivo(json.has("estado") && !json.get("estado").isJsonNull() ? json.get("estado").getAsBoolean() : true);
+        e.setActivo(json.has("activo") && !json.get("activo").isJsonNull() ? json.get("activo").getAsBoolean() : (json.has("estado") && !json.get("estado").isJsonNull() ? json.get("estado").getAsBoolean() : true));
         if (json.has("especialidad") && !json.get("especialidad").isJsonNull()) e.setEspecialidad(json.get("especialidad").getAsString());
         if (json.has("anios_experiencia") && !json.get("anios_experiencia").isJsonNull()) e.setExperienciaAnios(json.get("anios_experiencia").getAsInt());
         if (json.has("certificaciones") && !json.get("certificaciones").isJsonNull()) e.setCertificacion(json.get("certificaciones").getAsString());
+        if (json.has("biografia") && !json.get("biografia").isJsonNull()) e.setBiografia(json.get("biografia").getAsString());
         return e;
     }
 

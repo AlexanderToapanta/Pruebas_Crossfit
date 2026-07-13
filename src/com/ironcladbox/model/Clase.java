@@ -1,5 +1,6 @@
 package com.ironcladbox.model;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
@@ -14,6 +15,8 @@ public class Clase {
     private String diaSemana;
     private int capacidadMaxima;
     private boolean activa;
+    private LocalDate fecha;
+    private int inscritos;
     private LocalDateTime fechaCreacion;
 
     public Clase() {
@@ -110,6 +113,22 @@ public class Clase {
 
     public void setActiva(boolean activa) {
         this.activa = activa;
+    }
+
+    public LocalDate getFecha() {
+        return fecha;
+    }
+
+    public void setFecha(LocalDate fecha) {
+        this.fecha = fecha;
+    }
+
+    public int getInscritos() {
+        return inscritos;
+    }
+
+    public void setInscritos(int inscritos) {
+        this.inscritos = inscritos;
     }
 
     public LocalDateTime getFechaCreacion() {

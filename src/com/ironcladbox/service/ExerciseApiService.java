@@ -32,4 +32,21 @@ public class ExerciseApiService {
     public ApiResponse getStats() {
         return api.get(ApiConfig.EJERCICIOS + "/stats");
     }
+
+    public ApiResponse create(JsonObject data) {
+        return api.post(ApiConfig.EJERCICIOS, data);
+    }
+
+    public ApiResponse update(int id, JsonObject data) {
+        return api.put(ApiConfig.EJERCICIOS + "/" + id, data);
+    }
+
+    public ApiResponse delete(int id) {
+        return api.delete(ApiConfig.EJERCICIOS + "/" + id);
+    }
+
+    public ApiResponse reactivate(int id) {
+        JsonObject body = new JsonObject();
+        return api.patch(ApiConfig.EJERCICIOS + "/" + id + "/reactivate", body);
+    }
 }
