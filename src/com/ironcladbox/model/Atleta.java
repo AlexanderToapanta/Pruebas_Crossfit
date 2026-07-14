@@ -11,6 +11,9 @@ public class Atleta extends Usuario {
     private LocalDate fechaInicioMembresia;
     private LocalDate fechaFinMembresia;
     private boolean membresiaActiva;
+    private String direccion;
+    private String contactoEmergencia;
+    private LocalDate fechaNacimiento;
 
     public Atleta() { super(); }
     public Atleta(String email, String contrasena, String nombre, String apellido, String telefono) {
@@ -33,6 +36,12 @@ public class Atleta extends Usuario {
     public void setFechaFinMembresia(LocalDate fechaFinMembresia) { this.fechaFinMembresia = fechaFinMembresia; }
     public boolean isMembresiaActiva() { return membresiaActiva; }
     public void setMembresiaActiva(boolean membresiaActiva) { this.membresiaActiva = membresiaActiva; }
+    public String getDireccion() { return direccion; }
+    public void setDireccion(String direccion) { this.direccion = direccion; }
+    public String getContactoEmergencia() { return contactoEmergencia; }
+    public void setContactoEmergencia(String contactoEmergencia) { this.contactoEmergencia = contactoEmergencia; }
+    public LocalDate getFechaNacimiento() { return fechaNacimiento; }
+    public void setFechaNacimiento(LocalDate fechaNacimiento) { this.fechaNacimiento = fechaNacimiento; }
 
     public String getVigenciaMembresia() {
         if (nombreMembresia == null || nombreMembresia.isEmpty()) return "Sin membresia";

@@ -33,9 +33,17 @@ public class EntrenadorController {
         socketService.on("wod:updated", data -> notifyChange());
         socketService.on("wod:deleted", data -> notifyChange());
         socketService.on("schedule:created", data -> notifyChange());
+        socketService.on("schedule:cancelled", data -> notifyChange());
+        socketService.on("schedule:deleted", data -> notifyChange());
         socketService.on("enrollment:created", data -> notifyChange());
         socketService.on("enrollment:deleted", data -> notifyChange());
         socketService.on("attendance:marked", data -> notifyChange());
+        socketService.on("exercise:created", data -> notifyChange());
+        socketService.on("exercise:updated", data -> notifyChange());
+        socketService.on("exercise:deleted", data -> notifyChange());
+        socketService.on("exercise:reactivated", data -> notifyChange());
+        socketService.on("progress:updated", data -> notifyChange());
+        socketService.on("progress:deleted", data -> notifyChange());
         socketService.setOnReconnected(() -> notifyChange());
     }
 

@@ -44,6 +44,17 @@ public class AdminController {
         socketService.on("enrollment:created", data -> notifyChange());
         socketService.on("enrollment:deleted", data -> notifyChange());
         socketService.on("attendance:marked", data -> notifyChange());
+        socketService.on("wod:created", data -> notifyChange());
+        socketService.on("wod:updated", data -> notifyChange());
+        socketService.on("wod:deleted", data -> notifyChange());
+        socketService.on("schedule:created", data -> notifyChange());
+        socketService.on("schedule:cancelled", data -> notifyChange());
+        socketService.on("exercise:created", data -> notifyChange());
+        socketService.on("exercise:updated", data -> notifyChange());
+        socketService.on("exercise:deleted", data -> notifyChange());
+        socketService.on("exercise:reactivated", data -> notifyChange());
+        socketService.on("progress:updated", data -> notifyChange());
+        socketService.on("progress:deleted", data -> notifyChange());
         socketService.setOnReconnected(() -> notifyChange());
     }
 
@@ -226,6 +237,11 @@ public class AdminController {
         body.addProperty("apellido", atleta.getApellido());
         body.addProperty("email", atleta.getEmail());
         body.addProperty("telefono", atleta.getTelefono() != null ? atleta.getTelefono() : "");
+        if (atleta.getPeso() > 0) body.addProperty("peso", atleta.getPeso());
+        if (atleta.getAltura() > 0) body.addProperty("altura", atleta.getAltura());
+        body.addProperty("direccion", atleta.getDireccion() != null ? atleta.getDireccion() : "");
+        body.addProperty("contacto_emergencia", atleta.getContactoEmergencia() != null ? atleta.getContactoEmergencia() : "");
+        if (atleta.getFechaNacimiento() != null) body.addProperty("fecha_nacimiento", atleta.getFechaNacimiento().toString());
         ApiResponse resp = athleteService.update(atleta.getIdAtleta(), body);
         if (resp != null && resp.isQueued()) {
             System.out.println("actualizarAtleta: encolado sin conexion");
@@ -248,6 +264,8 @@ public class AdminController {
         body.addProperty("certificaciones", entrenador.getCertificacion() != null ? entrenador.getCertificacion() : "");
         body.addProperty("biografia", entrenador.getBiografia() != null ? entrenador.getBiografia() : "");
         body.addProperty("telefono", entrenador.getTelefono() != null ? entrenador.getTelefono() : "");
+        body.addProperty("direccion", entrenador.getDireccion() != null ? entrenador.getDireccion() : "");
+        if (entrenador.getFechaNacimiento() != null) body.addProperty("fecha_nacimiento", entrenador.getFechaNacimiento().toString());
         ApiResponse resp = trainerService.update(entrenador.getIdEntrenador(), body);
         if (resp != null && resp.isQueued()) {
             System.out.println("actualizarEntrenador: encolado sin conexion");
@@ -343,6 +361,11 @@ public class AdminController {
         if (json.has("fecha_fin") && !json.get("fecha_fin").isJsonNull()) {
             try { a.setFechaFinMembresia(LocalDate.parse(json.get("fecha_fin").getAsString().substring(0, 10))); } catch (Exception ignored) {}
         }
+        a.setDireccion(json.has("direccion") && !json.get("direccion").isJsonNull() ? json.get("direccion").getAsString() : "");
+        a.setContactoEmergencia(json.has("contacto_emergencia") && !json.get("contacto_emergencia").isJsonNull() ? json.get("contacto_emergencia").getAsString() : "");
+        if (json.has("fecha_nacimiento") && !json.get("fecha_nacimiento").isJsonNull()) {
+            try { a.setFechaNacimiento(LocalDate.parse(json.get("fecha_nacimiento").getAsString().substring(0, 10))); } catch (Exception ignored) {}
+        }
         return a;
     }
 
@@ -380,6 +403,10 @@ public class AdminController {
         if (json.has("anios_experiencia") && !json.get("anios_experiencia").isJsonNull()) e.setExperienciaAnios(json.get("anios_experiencia").getAsInt());
         if (json.has("certificaciones") && !json.get("certificaciones").isJsonNull()) e.setCertificacion(json.get("certificaciones").getAsString());
         if (json.has("biografia") && !json.get("biografia").isJsonNull()) e.setBiografia(json.get("biografia").getAsString());
+        e.setDireccion(json.has("direccion") && !json.get("direccion").isJsonNull() ? json.get("direccion").getAsString() : "");
+        if (json.has("fecha_nacimiento") && !json.get("fecha_nacimiento").isJsonNull()) {
+            try { e.setFechaNacimiento(LocalDate.parse(json.get("fecha_nacimiento").getAsString().substring(0, 10))); } catch (Exception ignored) {}
+        }
         return e;
     }
 

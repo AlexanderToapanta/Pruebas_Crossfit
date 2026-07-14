@@ -299,31 +299,46 @@ public class AdminDashboard extends JFrame {
         JTextField lastNameField = new JTextField();
         JTextField emailField = new JTextField();
         JTextField phoneField = new JTextField();
+        JTextField fechaField = new JTextField();
         JTextField pesoField = new JTextField();
         JTextField alturaField = new JTextField();
         JTextField dirField = new JTextField();
         JTextField emergField = new JTextField();
-        Object[] fields = {"Nombre:", nameField, "Apellido:", lastNameField, "Email:", emailField, "Telefono:", phoneField, "Peso:", pesoField, "Altura:", alturaField, "Direccion:", dirField, "Emergencia:", emergField};
+        Object[] fields = {"Nombre:", nameField, "Apellido:", lastNameField, "Email:", emailField, "Telefono:", phoneField, "Fecha Nac. (YYYY-MM-DD):", fechaField, "Peso:", pesoField, "Altura:", alturaField, "Direccion:", dirField, "Emergencia:", emergField};
         JPanel form = createFormPanel(fields);
 
         int result = JOptionPane.showConfirmDialog(this, form, "Nuevo Atleta", JOptionPane.OK_CANCEL_OPTION);
         if (result == JOptionPane.OK_OPTION) {
             try {
+                String fechaNac = fechaField.getText().trim();
+                if (fechaNac.isEmpty()) fechaNac = LocalDate.now().minusYears(20).toString();
+                String[] dateParts = fechaNac.split("-");
+                String password = dateParts.length == 3 ? dateParts[2] + dateParts[1] + dateParts[0] : "00000000";
                 JsonObject body = new JsonObject();
                 body.addProperty("nombre", nameField.getText().trim());
                 body.addProperty("apellido", lastNameField.getText().trim());
                 body.addProperty("email", emailField.getText().trim());
-                body.addProperty("fecha_nacimiento", LocalDate.now().minusYears(20).toString());
+                body.addProperty("fecha_nacimiento", fechaNac);
                 body.addProperty("telefono", phoneField.getText().trim());
-                body.addProperty("peso", pesoField.getText().trim());
-                body.addProperty("altura", alturaField.getText().trim());
-                body.addProperty("direccion", dirField.getText().trim());
-                body.addProperty("contacto_emergencia", emergField.getText().trim());
+                String pesoStr = pesoField.getText().trim();
+                if (!pesoStr.isEmpty()) {
+                    try { body.addProperty("peso", Double.parseDouble(pesoStr)); } catch (NumberFormatException e) { body.addProperty("peso", (Number) null); }
+                }
+                String alturaStr = alturaField.getText().trim();
+                if (!alturaStr.isEmpty()) {
+                    try { body.addProperty("altura", Double.parseDouble(alturaStr)); } catch (NumberFormatException e) { body.addProperty("altura", (Number) null); }
+                }
+                String dirStr = dirField.getText().trim();
+                if (!dirStr.isEmpty()) body.addProperty("direccion", dirStr);
+                String emergStr = emergField.getText().trim();
+                if (!emergStr.isEmpty()) body.addProperty("contacto_emergencia", emergStr);
                 ApiResponse resp = AthleteApiService.getInstance().create(body);
                 if (resp != null && resp.isQueued()) {
-                    JOptionPane.showMessageDialog(this, "Sin conexion. El atleta se guardara al reconectar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                    JOptionPane.showMessageDialog(this, "Sin conexion. El atleta se guardara al reconectar. Contrasena: " + password, "Aviso", JOptionPane.WARNING_MESSAGE);
                 } else if (resp == null || !resp.isOk()) {
                     JOptionPane.showMessageDialog(this, "Error al crear atleta: " + (resp != null ? resp.message : "Sin respuesta"), "Error", JOptionPane.ERROR_MESSAGE);
+                } else {
+                    JOptionPane.showMessageDialog(this, "Atleta creado. Su contrasena es: " + password + " (ddmmaaaa)");
                 }
                 loadAthletes(model);
             } catch (Exception ex) {
@@ -340,9 +355,10 @@ public class AdminDashboard extends JFrame {
         JTextField phoneField = new JTextField(a.getTelefono() != null ? a.getTelefono() : "");
         JTextField pesoField = new JTextField(a.getPeso() > 0 ? String.valueOf(a.getPeso()) : "");
         JTextField alturaField = new JTextField(a.getAltura() > 0 ? String.valueOf(a.getAltura()) : "");
-        JTextField dirField = new JTextField("");
-        JTextField emergField = new JTextField("");
-        Object[] fields = {"Nombre:", nameField, "Apellido:", lastNameField, "Email:", emailField, "Telefono:", phoneField, "Peso:", pesoField, "Altura:", alturaField, "Direccion:", dirField, "Emergencia:", emergField};
+        JTextField dirField = new JTextField(a.getDireccion() != null ? a.getDireccion() : "");
+        JTextField emergField = new JTextField(a.getContactoEmergencia() != null ? a.getContactoEmergencia() : "");
+        JTextField fechaNacField = new JTextField(a.getFechaNacimiento() != null ? a.getFechaNacimiento().toString() : "");
+        Object[] fields = {"Nombre:", nameField, "Apellido:", lastNameField, "Email:", emailField, "Telefono:", phoneField, "Peso:", pesoField, "Altura:", alturaField, "Direccion:", dirField, "Emergencia:", emergField, "Fecha Nac. (YYYY-MM-DD):", fechaNacField};
         JPanel form = createFormPanel(fields);
 
         if (JOptionPane.showConfirmDialog(this, form, "Editar Atleta", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
@@ -351,10 +367,20 @@ public class AdminDashboard extends JFrame {
             body.addProperty("apellido", lastNameField.getText().trim());
             body.addProperty("email", emailField.getText().trim());
             body.addProperty("telefono", phoneField.getText().trim());
-            body.addProperty("peso", pesoField.getText().trim());
-            body.addProperty("altura", alturaField.getText().trim());
-            body.addProperty("direccion", dirField.getText().trim());
-            body.addProperty("contacto_emergencia", emergField.getText().trim());
+            String pesoStr = pesoField.getText().trim();
+            if (!pesoStr.isEmpty()) {
+                try { body.addProperty("peso", Double.parseDouble(pesoStr)); } catch (NumberFormatException e) { body.addProperty("peso", (Number) null); }
+            }
+            String alturaStr = alturaField.getText().trim();
+            if (!alturaStr.isEmpty()) {
+                try { body.addProperty("altura", Double.parseDouble(alturaStr)); } catch (NumberFormatException e) { body.addProperty("altura", (Number) null); }
+            }
+            String dirStr = dirField.getText().trim();
+            if (!dirStr.isEmpty()) body.addProperty("direccion", dirStr);
+            String emergStr = emergField.getText().trim();
+            if (!emergStr.isEmpty()) body.addProperty("contacto_emergencia", emergStr);
+            String fechaNacStr = fechaNacField.getText().trim();
+            if (!fechaNacStr.isEmpty()) body.addProperty("fecha_nacimiento", fechaNacStr);
             ApiResponse resp = AthleteApiService.getInstance().update(a.getIdAtleta(), body);
             if (resp != null && resp.isQueued()) {
                 JOptionPane.showMessageDialog(this, "Sin conexion. Los cambios se guardaran al reconectar.", "Aviso", JOptionPane.WARNING_MESSAGE);
@@ -477,7 +503,9 @@ public class AdminDashboard extends JFrame {
         JTextField certField = new JTextField(e.getCertificacion() != null ? e.getCertificacion() : "");
         JTextField phoneField = new JTextField(e.getTelefono() != null ? e.getTelefono() : "");
         JTextField bioField = new JTextField(e.getBiografia() != null ? e.getBiografia() : "");
-        Object[] fields = {"Especialidad:", specField, "Experiencia:", expField, "Certificaciones:", certField, "Telefono:", phoneField, "Biografia:", bioField};
+        JTextField dirField = new JTextField(e.getDireccion() != null ? e.getDireccion() : "");
+        JTextField fechaNacField = new JTextField(e.getFechaNacimiento() != null ? e.getFechaNacimiento().toString() : "");
+        Object[] fields = {"Especialidad:", specField, "Experiencia:", expField, "Certificaciones:", certField, "Telefono:", phoneField, "Biografia:", bioField, "Direccion:", dirField, "Fecha Nac. (YYYY-MM-DD):", fechaNacField};
         JPanel form = createFormPanel(fields);
         if (JOptionPane.showConfirmDialog(this, form, "Editar Entrenador", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
             e.setEspecialidad(specField.getText().trim());
@@ -485,6 +513,10 @@ public class AdminDashboard extends JFrame {
             e.setCertificacion(certField.getText().trim());
             e.setTelefono(phoneField.getText().trim());
             e.setBiografia(bioField.getText().trim());
+            e.setDireccion(dirField.getText().trim());
+            if (!fechaNacField.getText().trim().isEmpty()) {
+                try { e.setFechaNacimiento(LocalDate.parse(fechaNacField.getText().trim())); } catch (Exception ignored) {}
+            }
             adminController.actualizarEntrenador(e);
             loadTrainers(model);
         }

@@ -1,5 +1,6 @@
 package com.ironcladbox.model;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public class Entrenador extends Usuario {
@@ -9,6 +10,8 @@ public class Entrenador extends Usuario {
     private int experienciaAnios;
     private LocalDateTime fechaContratacion;
     private String biografia;
+    private String direccion;
+    private LocalDate fechaNacimiento;
 
     public Entrenador() {
         super();
@@ -66,6 +69,11 @@ public class Entrenador extends Usuario {
     public void setBiografia(String biografia) {
         this.biografia = biografia;
     }
+
+    public String getDireccion() { return direccion; }
+    public void setDireccion(String direccion) { this.direccion = direccion; }
+    public LocalDate getFechaNacimiento() { return fechaNacimiento; }
+    public void setFechaNacimiento(LocalDate fechaNacimiento) { this.fechaNacimiento = fechaNacimiento; }
 
     @Override
     public String toString() {
