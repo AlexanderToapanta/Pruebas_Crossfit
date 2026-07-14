@@ -311,11 +311,11 @@ public class AdminController {
         body.addProperty("id_membresia", idMembresia);
         if (fechaInicio != null) body.addProperty("fecha_inicio", fechaInicio.toString());
         if (fechaFin != null) body.addProperty("fecha_fin", fechaFin.toString());
-        membershipService.assign(idAtleta, idMembresia);
+        membershipService.assign(idAtleta, idMembresia, fechaInicio != null ? fechaInicio.toString() : LocalDate.now().toString());
     }
 
     public void actualizarSuscripcion(Suscripcion suscripcion) {
-        membershipService.assign(suscripcion.getIdAtleta(), suscripcion.getIdMembresia());
+        membershipService.assign(suscripcion.getIdAtleta(), suscripcion.getIdMembresia(), LocalDate.now().toString());
     }
 
     public void revocarSuscripcion(int idSuscripcion) {
@@ -383,8 +383,8 @@ public class AdminController {
         return resp.isOk();
     }
 
-    public boolean asignarMembresia(int idAtleta, int idMembresia) {
-        ApiResponse resp = membershipService.assign(idAtleta, idMembresia);
+    public boolean asignarMembresia(int idAtleta, int idMembresia, String fechaInicio) {
+        ApiResponse resp = membershipService.assign(idAtleta, idMembresia, fechaInicio);
         if (resp != null && resp.isOk()) notifyChange();
         return resp.isOk();
     }

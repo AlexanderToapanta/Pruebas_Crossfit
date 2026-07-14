@@ -3,6 +3,7 @@ package com.ironcladbox.view;
 import com.ironcladbox.service.*;
 import com.ironcladbox.dto.ApiResponse;
 import com.ironcladbox.util.UIStyles;
+import com.ironcladbox.util.ValidationUtils;
 import com.ironcladbox.config.ApiConfig;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -391,16 +392,22 @@ public class LandingView extends JFrame {
         sendBtn.addActionListener(e -> {
             String n = nameField.getText().trim();
             String em = emailField.getText().trim();
+            String ph = phoneField.getText().trim();
             String msg = msgArea.getText().trim();
-            if (n.isEmpty() || em.isEmpty() || msg.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Completa nombre, email y mensaje", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
+
+            String err = ValidationUtils.validateMinLength(n, 2, "El nombre");
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+            err = ValidationUtils.validateEmail(em);
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+            err = ValidationUtils.validatePhoneOptional(ph);
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+            err = ValidationUtils.validateMinLength(msg, 10, "El mensaje");
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
             try {
                 JsonObject body = new JsonObject();
                 body.addProperty("name", n);
                 body.addProperty("email", em);
-                body.addProperty("phone", phoneField.getText().trim());
+                body.addProperty("phone", ph);
                 body.addProperty("message", msg);
                 body.addProperty("website", "");
                 ApiService.getInstance().post(ApiConfig.CONTACT, body);

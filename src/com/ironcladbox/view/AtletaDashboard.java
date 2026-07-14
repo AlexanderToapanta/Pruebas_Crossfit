@@ -5,6 +5,7 @@ import com.ironcladbox.controller.AtletaController;
 import com.ironcladbox.model.*;
 import com.ironcladbox.service.*;
 import com.ironcladbox.dto.ApiResponse;
+import com.ironcladbox.util.ValidationUtils;
 import com.google.gson.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -319,11 +320,15 @@ public class AtletaDashboard extends JFrame {
         dlg.add(new JLabel("Nueva:")); dlg.add(np); dlg.add(Box.createVerticalStrut(5));
         dlg.add(new JLabel("Confirmar:")); dlg.add(cf);
         if (JOptionPane.showConfirmDialog(this, dlg, "Cambiar Contrasena", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
-            if (!new String(np.getPassword()).equals(new String(cf.getPassword()))) {
-                JOptionPane.showMessageDialog(this, "Las contrasenas no coinciden", "Error", JOptionPane.ERROR_MESSAGE); return;
-            }
+            String cur = new String(cp.getPassword());
+            String nw = new String(np.getPassword());
+            String cnf = new String(cf.getPassword());
+            if (cur.isEmpty()) { JOptionPane.showMessageDialog(this, "La contrasena actual no puede estar vacia", "Error", JOptionPane.ERROR_MESSAGE); return; }
+            String err = ValidationUtils.validatePassword(nw);
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+            if (!nw.equals(cnf)) { JOptionPane.showMessageDialog(this, "Las contrasenas no coinciden", "Error", JOptionPane.ERROR_MESSAGE); return; }
             try {
-                ApiResponse r = AuthApiService.getInstance().changePassword(new String(cp.getPassword()), new String(np.getPassword()));
+                ApiResponse r = AuthApiService.getInstance().changePassword(cur, nw);
                 JOptionPane.showMessageDialog(this, r.isOk() ? "Contrasena actualizada!" : r.message);
             } catch (Exception ex) { JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage()); }
         }

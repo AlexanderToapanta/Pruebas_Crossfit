@@ -41,10 +41,11 @@ public class MembershipApiService {
         return api.delete(ApiConfig.ADMIN_MEMBERSHIPS + "/" + id);
     }
 
-    public ApiResponse assign(int idAtleta, int idMembresia) {
+    public ApiResponse assign(int idAtleta, int idMembresia, String fechaInicio) {
         JsonObject body = new JsonObject();
         body.addProperty("id_atleta", idAtleta);
         body.addProperty("id_membresia", idMembresia);
+        body.addProperty("fecha_inicio", fechaInicio);
         return api.post(ApiConfig.ADMIN_ASSIGN_MEMBERSHIP, body);
     }
 

@@ -6,6 +6,7 @@ import com.ironcladbox.model.*;
 import com.ironcladbox.service.*;
 import com.ironcladbox.dto.ApiResponse;
 import com.ironcladbox.util.UIStyles;
+import com.ironcladbox.util.ValidationUtils;
 import com.google.gson.*;
 import java.awt.*;
 import java.time.LocalDate;
@@ -310,28 +311,57 @@ public class AdminDashboard extends JFrame {
         int result = JOptionPane.showConfirmDialog(this, form, "Nuevo Atleta", JOptionPane.OK_CANCEL_OPTION);
         if (result == JOptionPane.OK_OPTION) {
             try {
-                String fechaNac = fechaField.getText().trim();
+                String n = nameField.getText().trim();
+                String ln = lastNameField.getText().trim();
+                String em = emailField.getText().trim();
+                String ph = phoneField.getText().trim();
+                String fn = fechaField.getText().trim();
+                String ps = pesoField.getText().trim();
+                String al = alturaField.getText().trim();
+                String emg = emergField.getText().trim();
+
+                String err = ValidationUtils.validateMinLength(n, 2, "El nombre");
+                if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+                err = ValidationUtils.validateOnlyLetters(n, "El nombre");
+                if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+                err = ValidationUtils.validateMinLength(ln, 2, "El apellido");
+                if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+                err = ValidationUtils.validateOnlyLetters(ln, "El apellido");
+                if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+                err = ValidationUtils.validateEmail(em);
+                if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+                err = ValidationUtils.validatePhone(ph);
+                if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+                err = ValidationUtils.validateDatePastMinAge(fn, 12, "La fecha de nacimiento");
+                if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+                err = ValidationUtils.validateInRangeOptional(ps, 20, 300, "El peso");
+                if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+                err = ValidationUtils.validateInRangeOptional(al, 0.5, 2.5, "La altura");
+                if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+                if (!emg.isEmpty()) {
+                    err = ValidationUtils.validateMinLength(emg, 3, "El contacto de emergencia");
+                    if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+                }
+
+                String fechaNac = fn;
                 if (fechaNac.isEmpty()) fechaNac = LocalDate.now().minusYears(20).toString();
                 String[] dateParts = fechaNac.split("-");
                 String password = dateParts.length == 3 ? dateParts[2] + dateParts[1] + dateParts[0] : "00000000";
                 JsonObject body = new JsonObject();
-                body.addProperty("nombre", nameField.getText().trim());
-                body.addProperty("apellido", lastNameField.getText().trim());
-                body.addProperty("email", emailField.getText().trim());
+                body.addProperty("nombre", n);
+                body.addProperty("apellido", ln);
+                body.addProperty("email", em);
                 body.addProperty("fecha_nacimiento", fechaNac);
-                body.addProperty("telefono", phoneField.getText().trim());
-                String pesoStr = pesoField.getText().trim();
-                if (!pesoStr.isEmpty()) {
-                    try { body.addProperty("peso", Double.parseDouble(pesoStr)); } catch (NumberFormatException e) { body.addProperty("peso", (Number) null); }
+                body.addProperty("telefono", ph);
+                if (!ps.isEmpty()) {
+                    try { body.addProperty("peso", Double.parseDouble(ps)); } catch (NumberFormatException e) { body.addProperty("peso", (Number) null); }
                 }
-                String alturaStr = alturaField.getText().trim();
-                if (!alturaStr.isEmpty()) {
-                    try { body.addProperty("altura", Double.parseDouble(alturaStr)); } catch (NumberFormatException e) { body.addProperty("altura", (Number) null); }
+                if (!al.isEmpty()) {
+                    try { body.addProperty("altura", Double.parseDouble(al)); } catch (NumberFormatException e) { body.addProperty("altura", (Number) null); }
                 }
                 String dirStr = dirField.getText().trim();
                 if (!dirStr.isEmpty()) body.addProperty("direccion", dirStr);
-                String emergStr = emergField.getText().trim();
-                if (!emergStr.isEmpty()) body.addProperty("contacto_emergencia", emergStr);
+                if (!emg.isEmpty()) body.addProperty("contacto_emergencia", emg);
                 ApiResponse resp = AthleteApiService.getInstance().create(body);
                 if (resp != null && resp.isQueued()) {
                     JOptionPane.showMessageDialog(this, "Sin conexion. El atleta se guardara al reconectar. Contrasena: " + password, "Aviso", JOptionPane.WARNING_MESSAGE);
@@ -362,25 +392,53 @@ public class AdminDashboard extends JFrame {
         JPanel form = createFormPanel(fields);
 
         if (JOptionPane.showConfirmDialog(this, form, "Editar Atleta", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
-            JsonObject body = new JsonObject();
-            body.addProperty("nombre", nameField.getText().trim());
-            body.addProperty("apellido", lastNameField.getText().trim());
-            body.addProperty("email", emailField.getText().trim());
-            body.addProperty("telefono", phoneField.getText().trim());
-            String pesoStr = pesoField.getText().trim();
-            if (!pesoStr.isEmpty()) {
-                try { body.addProperty("peso", Double.parseDouble(pesoStr)); } catch (NumberFormatException e) { body.addProperty("peso", (Number) null); }
+            String n = nameField.getText().trim();
+            String ln = lastNameField.getText().trim();
+            String em = emailField.getText().trim();
+            String ph = phoneField.getText().trim();
+            String ps = pesoField.getText().trim();
+            String al = alturaField.getText().trim();
+            String fn = fechaNacField.getText().trim();
+            String emg = emergField.getText().trim();
+
+            String err = ValidationUtils.validateMinLength(n, 2, "El nombre");
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+            err = ValidationUtils.validateOnlyLetters(n, "El nombre");
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+            err = ValidationUtils.validateMinLength(ln, 2, "El apellido");
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+            err = ValidationUtils.validateOnlyLetters(ln, "El apellido");
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+            err = ValidationUtils.validateEmail(em);
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+            err = ValidationUtils.validatePhone(ph);
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+            err = ValidationUtils.validateDatePastMinAge(fn, 12, "La fecha de nacimiento");
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+            err = ValidationUtils.validateInRangeOptional(ps, 20, 300, "El peso");
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+            err = ValidationUtils.validateInRangeOptional(al, 0.5, 2.5, "La altura");
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+            if (!emg.isEmpty()) {
+                err = ValidationUtils.validateMinLength(emg, 3, "El contacto de emergencia");
+                if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
             }
-            String alturaStr = alturaField.getText().trim();
-            if (!alturaStr.isEmpty()) {
-                try { body.addProperty("altura", Double.parseDouble(alturaStr)); } catch (NumberFormatException e) { body.addProperty("altura", (Number) null); }
+
+            JsonObject body = new JsonObject();
+            body.addProperty("nombre", n);
+            body.addProperty("apellido", ln);
+            body.addProperty("email", em);
+            body.addProperty("telefono", ph);
+            if (!ps.isEmpty()) {
+                try { body.addProperty("peso", Double.parseDouble(ps)); } catch (NumberFormatException e) { body.addProperty("peso", (Number) null); }
+            }
+            if (!al.isEmpty()) {
+                try { body.addProperty("altura", Double.parseDouble(al)); } catch (NumberFormatException e) { body.addProperty("altura", (Number) null); }
             }
             String dirStr = dirField.getText().trim();
             if (!dirStr.isEmpty()) body.addProperty("direccion", dirStr);
-            String emergStr = emergField.getText().trim();
-            if (!emergStr.isEmpty()) body.addProperty("contacto_emergencia", emergStr);
-            String fechaNacStr = fechaNacField.getText().trim();
-            if (!fechaNacStr.isEmpty()) body.addProperty("fecha_nacimiento", fechaNacStr);
+            if (!emg.isEmpty()) body.addProperty("contacto_emergencia", emg);
+            if (!fn.isEmpty()) body.addProperty("fecha_nacimiento", fn);
             ApiResponse resp = AthleteApiService.getInstance().update(a.getIdAtleta(), body);
             if (resp != null && resp.isQueued()) {
                 JOptionPane.showMessageDialog(this, "Sin conexion. Los cambios se guardaran al reconectar.", "Aviso", JOptionPane.WARNING_MESSAGE);
@@ -396,9 +454,14 @@ public class AdminDashboard extends JFrame {
         List<Membresia> list = adminController.obtenerMembresias();
         String[] names = list.stream().map(m -> m.getNombre() + " - $" + m.getPrecio() + " / " + m.getDuracionDias() + "d").toArray(String[]::new);
         JComboBox<String> combo = new JComboBox<>(names);
-        if (JOptionPane.showConfirmDialog(this, combo, "Asignar Membresia", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+        JTextField fechaInicioField = new JTextField(LocalDate.now().toString());
+        Object[] fields = {"Membresia:", combo, "Fecha inicio (YYYY-MM-DD):", fechaInicioField};
+        JPanel form = createFormPanel(fields);
+        if (JOptionPane.showConfirmDialog(this, form, "Asignar Membresia", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+            String err = ValidationUtils.validateDateNotFuture(fechaInicioField.getText().trim(), "La fecha de inicio");
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
             Membresia selected = list.get(combo.getSelectedIndex());
-            if (adminController.asignarMembresia(idAtleta, selected.getIdMembresia())) {
+            if (adminController.asignarMembresia(idAtleta, selected.getIdMembresia(), fechaInicioField.getText().trim())) {
                 loadAthletes(model);
             }
         }
@@ -508,14 +571,30 @@ public class AdminDashboard extends JFrame {
         Object[] fields = {"Especialidad:", specField, "Experiencia:", expField, "Certificaciones:", certField, "Telefono:", phoneField, "Biografia:", bioField, "Direccion:", dirField, "Fecha Nac. (YYYY-MM-DD):", fechaNacField};
         JPanel form = createFormPanel(fields);
         if (JOptionPane.showConfirmDialog(this, form, "Editar Entrenador", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
-            e.setEspecialidad(specField.getText().trim());
-            e.setExperienciaAnios(Integer.parseInt(expField.getText().trim()));
+            String sp = specField.getText().trim();
+            String ex = expField.getText().trim();
+            String ph = phoneField.getText().trim();
+            String fn = fechaNacField.getText().trim();
+
+            String err = ValidationUtils.validateNotEmpty(sp, "La especialidad");
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+            err = ValidationUtils.validatePositiveInteger(ex, "La experiencia");
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+            err = ValidationUtils.validatePhone(ph);
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+            if (!fn.isEmpty()) {
+                err = ValidationUtils.validateDatePastMinAgeOptional(fn, 18, "La fecha de nacimiento");
+                if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+            }
+
+            e.setEspecialidad(sp);
+            e.setExperienciaAnios(Integer.parseInt(ex));
             e.setCertificacion(certField.getText().trim());
-            e.setTelefono(phoneField.getText().trim());
+            e.setTelefono(ph);
             e.setBiografia(bioField.getText().trim());
             e.setDireccion(dirField.getText().trim());
-            if (!fechaNacField.getText().trim().isEmpty()) {
-                try { e.setFechaNacimiento(LocalDate.parse(fechaNacField.getText().trim())); } catch (Exception ignored) {}
+            if (!fn.isEmpty()) {
+                try { e.setFechaNacimiento(LocalDate.parse(fn)); } catch (Exception ignored) {}
             }
             adminController.actualizarEntrenador(e);
             loadTrainers(model);
@@ -545,16 +624,36 @@ public class AdminDashboard extends JFrame {
 
         if (JOptionPane.showConfirmDialog(this, form, "Nuevo Entrenador", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
             try {
+                String n = nameField.getText().trim();
+                String ln = lastNameField.getText().trim();
+                String em = emailField.getText().trim();
+                String sp = specField.getText().trim();
+                String ex = expField.getText().trim();
+                String ph = phoneField.getText().trim();
+
+                String err = ValidationUtils.validateOnlyLetters(n, "El nombre");
+                if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+                err = ValidationUtils.validateOnlyLetters(ln, "El apellido");
+                if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+                err = ValidationUtils.validateCrossfitEmail(em);
+                if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+                err = ValidationUtils.validateNotEmpty(sp, "La especialidad");
+                if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+                err = ValidationUtils.validatePositiveInteger(ex, "La experiencia");
+                if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+                err = ValidationUtils.validatePhone(ph);
+                if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+
                 JsonObject body = new JsonObject();
-                body.addProperty("nombre", nameField.getText().trim());
-                body.addProperty("apellido", lastNameField.getText().trim());
-                body.addProperty("email", emailField.getText().trim());
-                body.addProperty("especialidad", specField.getText().trim());
-                body.addProperty("anios_experiencia", Integer.parseInt(expField.getText().trim()));
+                body.addProperty("nombre", n);
+                body.addProperty("apellido", ln);
+                body.addProperty("email", em);
+                body.addProperty("especialidad", sp);
+                body.addProperty("anios_experiencia", Integer.parseInt(ex));
                 body.addProperty("certificaciones", certField.getText().trim());
                 body.addProperty("biografia", bioField.getText().trim());
                 body.addProperty("fecha_nacimiento", LocalDate.now().minusYears(25).toString());
-                body.addProperty("telefono", phoneField.getText().trim());
+                body.addProperty("telefono", ph);
                 body.addProperty("direccion", "");
                 ApiResponse resp = TrainerApiService.getInstance().create(body);
                 if (resp != null && resp.isQueued()) {
@@ -822,9 +921,17 @@ public class AdminDashboard extends JFrame {
 
         if (JOptionPane.showConfirmDialog(this, scrollForm, "Nuevo WOD", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
             try {
+                String tit = titleField.getText().trim();
+                String fec = dateField.getText().trim();
+
+                String err = ValidationUtils.validateMinLength(tit, 3, "El titulo");
+                if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+                err = ValidationUtils.validateDateNotPast(fec, "La fecha");
+                if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+
                 JsonObject body = new JsonObject();
-                body.addProperty("titulo", titleField.getText().trim());
-                body.addProperty("fecha", dateField.getText().trim());
+                body.addProperty("titulo", tit);
+                body.addProperty("fecha", fec);
                 body.addProperty("descripcion", descField.getText().trim());
                 body.addProperty("tipo", typeBox.getSelectedItem().toString());
                 body.addProperty("nivel", levelBox.getSelectedItem().toString());
@@ -832,9 +939,14 @@ public class AdminDashboard extends JFrame {
                 for (int i = 0; i < horariosHora.size(); i++) {
                     String hora = horariosHora.get(i).getText().trim();
                     if (hora.isEmpty()) continue;
+                    err = ValidationUtils.validateTimeRange(hora, "La hora");
+                    if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+                    String cupoStr = horariosCupo.get(i).getText().trim();
+                    err = ValidationUtils.validatePositiveInteger(cupoStr, "El cupo");
+                    if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
                     JsonObject h = new JsonObject();
                     h.addProperty("hora", hora + ":00");
-                    try { h.addProperty("cupo_maximo", Integer.parseInt(horariosCupo.get(i).getText().trim())); } catch (Exception ex) { h.addProperty("cupo_maximo", 20); }
+                    h.addProperty("cupo_maximo", Integer.parseInt(cupoStr));
                     String sel = horariosEnt.get(i).getSelectedItem().toString();
                     h.addProperty("id_entrenador", Integer.parseInt(sel.split(" - ")[0]));
                     horariosArr.add(h);
@@ -985,12 +1097,26 @@ public class AdminDashboard extends JFrame {
         Object[] fields = {"Nombre:", nameField, "Precio:", priceField, "Duracion (dias):", daysField, "Descripcion:", descField, "Beneficios:", benefitsField, "", activeCheck};
         JPanel form = createFormPanel(fields);
         if (JOptionPane.showConfirmDialog(this, form, "Editar Membresia", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+            String nm = nameField.getText().trim();
+            String pr = priceField.getText().trim();
+            String dd = daysField.getText().trim();
+            String bf = benefitsField.getText().trim();
+
+            String err = ValidationUtils.validateMinLength(nm, 3, "El nombre");
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+            err = ValidationUtils.validatePositiveDouble(pr, "El precio");
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+            err = ValidationUtils.validatePositiveInteger(dd, "La duracion");
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+            err = ValidationUtils.validateNotEmpty(bf, "Los beneficios");
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+
             JsonObject body = new JsonObject();
-            body.addProperty("nombre", nameField.getText().trim());
-            body.addProperty("precio", Double.parseDouble(priceField.getText().trim()));
-            body.addProperty("duracion_dias", Integer.parseInt(daysField.getText().trim()));
+            body.addProperty("nombre", nm);
+            body.addProperty("precio", Double.parseDouble(pr));
+            body.addProperty("duracion_dias", Integer.parseInt(dd));
             body.addProperty("descripcion", descField.getText().trim());
-            body.addProperty("beneficios", benefitsField.getText().trim());
+            body.addProperty("beneficios", bf);
             body.addProperty("estado", activeCheck.isSelected());
             ApiResponse resp = MembershipApiService.getInstance().update(m.getIdMembresia(), body);
             if (resp == null || (!resp.isOk() && !resp.isQueued())) {
@@ -1010,9 +1136,22 @@ public class AdminDashboard extends JFrame {
         JPanel form = createFormPanel(fields);
 
         if (JOptionPane.showConfirmDialog(this, form, "Nueva Membresia", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
-            Membresia m = new Membresia(nameField.getText().trim(), descField.getText().trim(),
-                Double.parseDouble(priceField.getText().trim()), Integer.parseInt(daysField.getText().trim()),
-                benefitsField.getText().trim());
+            String nm = nameField.getText().trim();
+            String pr = priceField.getText().trim();
+            String dd = daysField.getText().trim();
+            String bf = benefitsField.getText().trim();
+
+            String err = ValidationUtils.validateMinLength(nm, 3, "El nombre");
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+            err = ValidationUtils.validatePositiveDouble(pr, "El precio");
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+            err = ValidationUtils.validatePositiveInteger(dd, "La duracion");
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+            err = ValidationUtils.validateNotEmpty(bf, "Los beneficios");
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+
+            Membresia m = new Membresia(nm, descField.getText().trim(),
+                Double.parseDouble(pr), Integer.parseInt(dd), bf);
             adminController.crearMembresia(m);
             loadMemberships(model);
         }
@@ -1109,8 +1248,11 @@ public class AdminDashboard extends JFrame {
         JTextField descField = new JTextField();
         Object[] fields = {"Nombre:", nameField, "Descripcion:", descField};
         if (JOptionPane.showConfirmDialog(this, createFormPanel(fields), "Nuevo Ejercicio", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+            String nm = nameField.getText().trim();
+            String err = ValidationUtils.validateMinLength(nm, 3, "El nombre");
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
             JsonObject body = new JsonObject();
-            body.addProperty("nombre", nameField.getText().trim());
+            body.addProperty("nombre", nm);
             body.addProperty("descripcion", descField.getText().trim());
             ExerciseApiService.getInstance().create(body);
             loadExercises(model);
@@ -1127,8 +1269,11 @@ public class AdminDashboard extends JFrame {
             JTextField descField = new JTextField(ex.has("descripcion") && !ex.get("descripcion").isJsonNull() ? ex.get("descripcion").getAsString() : "");
             Object[] fields = {"Nombre:", nameField, "Descripcion:", descField};
             if (JOptionPane.showConfirmDialog(this, createFormPanel(fields), "Editar Ejercicio", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+                String nm = nameField.getText().trim();
+                String err = ValidationUtils.validateMinLength(nm, 3, "El nombre");
+                if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
                 JsonObject body = new JsonObject();
-                body.addProperty("nombre", nameField.getText().trim());
+                body.addProperty("nombre", nm);
                 body.addProperty("descripcion", descField.getText().trim());
                 ExerciseApiService.getInstance().update(id, body);
                 loadExercises(model);
@@ -1253,10 +1398,24 @@ public class AdminDashboard extends JFrame {
         JPanel form = createFormPanel(fields);
 
         if (JOptionPane.showConfirmDialog(this, form, "Nueva Clase", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+            String nm = nameField.getText().trim();
+            String fe = dateField.getText().trim();
+            String ho = timeField.getText().trim();
+            String ca = capField.getText().trim();
+
+            String err = ValidationUtils.validateMinLength(nm, 3, "El nombre");
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+            err = ValidationUtils.validateDateNotPast(fe, "La fecha");
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+            err = ValidationUtils.validateTimeRange(ho, "La hora");
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+            err = ValidationUtils.validatePositiveInteger(ca, "El cupo");
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+
             int entId = Integer.parseInt(trainerNames[entBox.getSelectedIndex()].split(" - ")[0]);
-            Clase c = new Clase(nameField.getText().trim(), descField.getText().trim(), entId,
-                LocalTime.parse(timeField.getText().trim()), LocalTime.parse(timeField.getText().trim()).plusHours(1),
-                dateField.getText().trim(), Integer.parseInt(capField.getText().trim()));
+            Clase c = new Clase(nm, descField.getText().trim(), entId,
+                LocalTime.parse(ho), LocalTime.parse(ho).plusHours(1),
+                fe, Integer.parseInt(ca));
             adminController.crearClase(c);
             loadClasses(model);
         }
@@ -1277,13 +1436,27 @@ public class AdminDashboard extends JFrame {
         for (int i = 0; i < trainers.size(); i++) { if (trainers.get(i).getIdEntrenador() == c.getIdEntrenador()) { entBox.setSelectedIndex(i); break; } }
         Object[] fields = {"Nombre:", nameField, "Descripcion:", descField, "Fecha:", dateField, "Hora:", timeField, "Cupo:", capField, "Entrenador:", entBox};
         if (JOptionPane.showConfirmDialog(this, createFormPanel(fields), "Editar Clase", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+            String nm = nameField.getText().trim();
+            String fe = dateField.getText().trim();
+            String ho = timeField.getText().trim();
+            String ca = capField.getText().trim();
+
+            String err = ValidationUtils.validateMinLength(nm, 3, "El nombre");
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+            err = ValidationUtils.validateDateNotPast(fe, "La fecha");
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+            err = ValidationUtils.validateTimeRange(ho, "La hora");
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+            err = ValidationUtils.validatePositiveInteger(ca, "El cupo");
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+
             int entId = Integer.parseInt(trainerNames[entBox.getSelectedIndex()].split(" - ")[0]);
             JsonObject body = new JsonObject();
-            body.addProperty("nombre", nameField.getText().trim());
+            body.addProperty("nombre", nm);
             body.addProperty("descripcion", descField.getText().trim());
-            body.addProperty("fecha", dateField.getText().trim());
-            body.addProperty("hora", timeField.getText().trim() + ":00");
-            body.addProperty("cupo_maximo", Integer.parseInt(capField.getText().trim()));
+            body.addProperty("fecha", fe);
+            body.addProperty("hora", ho + ":00");
+            body.addProperty("cupo_maximo", Integer.parseInt(ca));
             body.addProperty("id_entrenador", entId);
             ApiResponse resp = ClassApiService.getInstance().update(c.getIdClase(), body);
             if (resp != null && resp.isOk()) loadClasses(model);
@@ -1332,13 +1505,15 @@ public class AdminDashboard extends JFrame {
         Object[] fields = {"Contrasena actual:", currentPwd, "Nueva contrasena:", newPwd, "Confirmar nueva:", confirmPwd};
         JPanel form = createFormPanel(fields);
         if (JOptionPane.showConfirmDialog(this, form, "Cambiar Contrasena", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
-            if (!new String(newPwd.getPassword()).equals(new String(confirmPwd.getPassword()))) {
-                JOptionPane.showMessageDialog(this, "Las contrasenas no coinciden", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
+            String cur = new String(currentPwd.getPassword());
+            String np = new String(newPwd.getPassword());
+            String cf = new String(confirmPwd.getPassword());
+            if (cur.isEmpty()) { JOptionPane.showMessageDialog(this, "La contrasena actual no puede estar vacia", "Error", JOptionPane.ERROR_MESSAGE); return; }
+            String pwdErr = ValidationUtils.validatePassword(np);
+            if (pwdErr != null) { JOptionPane.showMessageDialog(this, pwdErr, "Error", JOptionPane.ERROR_MESSAGE); return; }
+            if (!np.equals(cf)) { JOptionPane.showMessageDialog(this, "Las contrasenas no coinciden", "Error", JOptionPane.ERROR_MESSAGE); return; }
             try {
-                ApiResponse resp = AuthApiService.getInstance().changePassword(
-                    new String(currentPwd.getPassword()), new String(newPwd.getPassword()));
+                ApiResponse resp = AuthApiService.getInstance().changePassword(cur, np);
                 JOptionPane.showMessageDialog(this, resp.isOk() ? "Contrasena actualizada!" : resp.message);
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());

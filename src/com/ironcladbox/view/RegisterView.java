@@ -2,6 +2,7 @@ package com.ironcladbox.view;
 
 import com.ironcladbox.controller.AuthController;
 import com.ironcladbox.util.UIStyles;
+import com.ironcladbox.util.ValidationUtils;
 import com.ironcladbox.service.MembershipApiService;
 import com.ironcladbox.dto.ApiResponse;
 import com.ironcladbox.model.Atleta;
@@ -103,11 +104,11 @@ public class RegisterView extends JFrame {
         addLabeledField(mainPanel, "🔐 Contraseña:", passwordField = new JPasswordField(20), gbc, row++);
 
         // Peso
-        pesoSpinner = new JSpinner(new SpinnerNumberModel(70.0, 30.0, 200.0, 0.1));
+        pesoSpinner = new JSpinner(new SpinnerNumberModel(70.0, 20.0, 300.0, 0.1));
         addLabeledField(mainPanel, "⚖️ Peso (kg):", pesoSpinner, gbc, row++);
 
         // Altura
-        alturaSpinner = new JSpinner(new SpinnerNumberModel(1.70, 1.40, 2.20, 0.01));
+        alturaSpinner = new JSpinner(new SpinnerNumberModel(1.70, 0.50, 2.50, 0.01));
         addLabeledField(mainPanel, "📏 Altura (m):", alturaSpinner, gbc, row++);
 
         // Membresía
@@ -192,8 +193,20 @@ public class RegisterView extends JFrame {
             double peso = (double) pesoSpinner.getValue();
             double altura = (double) alturaSpinner.getValue();
 
-            if (nombre.isEmpty() || apellido.isEmpty() || email.isEmpty() || password.isEmpty()) {
-                messageLabel.setText("Completa los campos obligatorios");
+            String err = ValidationUtils.validateMinLength(nombre, 2, "El nombre");
+            if (err != null) { messageLabel.setText(err); return; }
+            err = ValidationUtils.validateOnlyLetters(nombre, "El nombre");
+            if (err != null) { messageLabel.setText(err); return; }
+            err = ValidationUtils.validateMinLength(apellido, 2, "El apellido");
+            if (err != null) { messageLabel.setText(err); return; }
+            err = ValidationUtils.validateOnlyLetters(apellido, "El apellido");
+            if (err != null) { messageLabel.setText(err); return; }
+            err = ValidationUtils.validateEmail(email);
+            if (err != null) { messageLabel.setText(err); return; }
+            err = ValidationUtils.validatePhone(telefono);
+            if (err != null) { messageLabel.setText(err); return; }
+            if (password.isEmpty()) {
+                messageLabel.setText("La contrase\u00f1a es obligatoria");
                 return;
             }
 

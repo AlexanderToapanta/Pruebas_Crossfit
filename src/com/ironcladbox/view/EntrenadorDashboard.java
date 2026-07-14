@@ -5,6 +5,7 @@ import com.ironcladbox.controller.EntrenadorController;
 import com.ironcladbox.model.*;
 import com.ironcladbox.service.*;
 import com.ironcladbox.dto.ApiResponse;
+import com.ironcladbox.util.ValidationUtils;
 import com.google.gson.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
@@ -242,7 +243,19 @@ public class EntrenadorDashboard extends JFrame {
         JPanel form = createForm(fields);
         if (JOptionPane.showConfirmDialog(this, form, "Nueva Clase", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
             try {
-                Clase c = new Clase(nameField.getText(), descField.getText(), entrenadorActual.getIdEntrenador(), LocalTime.parse(timeField.getText()), LocalTime.parse(timeField.getText()).plusHours(1), dateField.getText(), Integer.parseInt(capField.getText()));
+                String nm = nameField.getText();
+                String fe = dateField.getText();
+                String ho = timeField.getText();
+                String ca = capField.getText();
+                String err = ValidationUtils.validateMinLength(nm, 3, "El nombre");
+                if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+                err = ValidationUtils.validateDateNotPast(fe, "La fecha");
+                if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+                err = ValidationUtils.validateTimeRange(ho, "La hora");
+                if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+                err = ValidationUtils.validatePositiveInteger(ca, "El cupo");
+                if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+                Clase c = new Clase(nm, descField.getText(), entrenadorActual.getIdEntrenador(), LocalTime.parse(ho), LocalTime.parse(ho).plusHours(1), fe, Integer.parseInt(ca));
                 entrenadorController.crearClase(c);
             } catch (Exception ex) { JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage()); }
         }
@@ -471,17 +484,30 @@ public class EntrenadorDashboard extends JFrame {
 
         if (JOptionPane.showConfirmDialog(this, form, "Crear WOD", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
             try {
+                String tit = tituloField.getText();
+                String fec = fechaField.getText();
+                String err = ValidationUtils.validateMinLength(tit, 3, "El titulo");
+                if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+                err = ValidationUtils.validateDateNotPast(fec, "La fecha");
+                if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+
                 JsonObject body = new JsonObject();
-                body.addProperty("fecha", fechaField.getText());
-                body.addProperty("titulo", tituloField.getText());
+                body.addProperty("fecha", fec);
+                body.addProperty("titulo", tit);
                 body.addProperty("descripcion", descArea.getText());
                 body.addProperty("tipo", (String) tipoBox.getSelectedItem());
                 body.addProperty("nivel", (String) nivelBox.getSelectedItem());
                 JsonArray horarios = new JsonArray();
                 for (int i = 0; i < schedModel.getRowCount(); i++) {
+                    String hora = (String) schedModel.getValueAt(i, 0);
+                    err = ValidationUtils.validateTimeRange(hora, "La hora");
+                    if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+                    int cupo = (int) schedModel.getValueAt(i, 1);
+                    err = ValidationUtils.validatePositiveInteger(String.valueOf(cupo), "El cupo");
+                    if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
                     JsonObject h = new JsonObject();
-                    h.addProperty("hora", (String) schedModel.getValueAt(i, 0));
-                    h.addProperty("cupo_maximo", (int) schedModel.getValueAt(i, 1));
+                    h.addProperty("hora", hora);
+                    h.addProperty("cupo_maximo", cupo);
                     h.addProperty("id_entrenador", entrenadorActual.getIdEntrenador());
                     horarios.add(h);
                 }
@@ -736,8 +762,11 @@ public class EntrenadorDashboard extends JFrame {
         String title = editRow != null ? "Editar Ejercicio" : "Nuevo Ejercicio";
         if (JOptionPane.showConfirmDialog(this, form, title, JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
             try {
+                String nm = nameField.getText();
+                String err = ValidationUtils.validateMinLength(nm, 3, "El nombre");
+                if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
                 JsonObject body = new JsonObject();
-                body.addProperty("nombre", nameField.getText());
+                body.addProperty("nombre", nm);
                 body.addProperty("descripcion", descArea.getText());
                 ApiResponse resp;
                 if (editRow != null) {
@@ -853,12 +882,15 @@ public class EntrenadorDashboard extends JFrame {
         Object[] fields = {"Contrasena actual:", cp, "Nueva contrasena:", np, "Confirmar nueva:", cf};
         JPanel form = createForm(fields);
         if (JOptionPane.showConfirmDialog(this, form, "Cambiar Contrasena", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
-            if (!new String(np.getPassword()).equals(new String(cf.getPassword()))) {
-                JOptionPane.showMessageDialog(this, "Las contrasenas no coinciden", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
+            String cur = new String(cp.getPassword());
+            String nw = new String(np.getPassword());
+            String cnf = new String(cf.getPassword());
+            if (cur.isEmpty()) { JOptionPane.showMessageDialog(this, "La contrasena actual no puede estar vacia", "Error", JOptionPane.ERROR_MESSAGE); return; }
+            String err = ValidationUtils.validatePassword(nw);
+            if (err != null) { JOptionPane.showMessageDialog(this, err, "Error", JOptionPane.ERROR_MESSAGE); return; }
+            if (!nw.equals(cnf)) { JOptionPane.showMessageDialog(this, "Las contrasenas no coinciden", "Error", JOptionPane.ERROR_MESSAGE); return; }
             try {
-                ApiResponse resp = AuthApiService.getInstance().changePassword(new String(cp.getPassword()), new String(np.getPassword()));
+                ApiResponse resp = AuthApiService.getInstance().changePassword(cur, nw);
                 JOptionPane.showMessageDialog(this, resp.isOk() ? "Contrasena actualizada!" : resp.message);
             } catch (Exception ex) { JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage()); }
         }
